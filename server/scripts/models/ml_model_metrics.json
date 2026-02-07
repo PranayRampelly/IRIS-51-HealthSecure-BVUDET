@@ -1,0 +1,77 @@
+{
+  "Malaria": {
+    "accuracy": 99.2,
+    "precision": 99.2,
+    "recall": 99.2,
+    "top_feature": "Temp Min",
+    "feature_importance": {
+      "Rain": 9.8,
+      "Temp Max": 27.0,
+      "Temp Min": 33.0,
+      "Month": 28.5,
+      "City_Code": 1.8
+    },
+    "model_file": "rf_model_malaria.pkl",
+    "samples": 162443
+  },
+  "Dengue": {
+    "accuracy": 99.2,
+    "precision": 99.2,
+    "recall": 99.2,
+    "top_feature": "Month",
+    "feature_importance": {
+      "Rain": 9.4,
+      "Temp Max": 22.7,
+      "Temp Min": 31.2,
+      "Month": 35.3,
+      "City_Code": 1.3
+    },
+    "model_file": "rf_model_dengue.pkl",
+    "samples": 162443
+  },
+  "Cholera": {
+    "accuracy": 99.9,
+    "precision": 99.9,
+    "recall": 99.9,
+    "top_feature": "Month",
+    "feature_importance": {
+      "Rain": 16.1,
+      "Temp Max": 3.4,
+      "Temp Min": 17.4,
+      "Month": 62.3,
+      "City_Code": 0.7
+    },
+    "model_file": "rf_model_cholera.pkl",
+    "samples": 162443
+  },
+  "Heat Stroke": {
+    "accuracy": 99.7,
+    "precision": 99.7,
+    "recall": 99.7,
+    "top_feature": "Month",
+    "feature_importance": {
+      "Rain": 15.8,
+      "Temp Max": 22.6,
+      "Temp Min": 14.4,
+      "Month": 46.1,
+      "City_Code": 1.1
+    },
+    "model_file": "rf_model_heat_stroke.pkl",
+    "samples": 162443
+  },
+  "Respiratory Diseases": {
+    "accuracy": 99.3,
+    "precision": 99.3,
+    "recall": 99.3,
+    "top_feature": "Temp Min",
+    "feature_importance": {
+      "Rain": 10.1,
+      "Temp Max": 37.3,
+      "Temp Min": 40.7,
+      "Month": 10.3,
+      "City_Code": 1.6
+    },
+    "model_file": "rf_model_respiratory_diseases.pkl",
+    "samples": 162443
+  }
+}

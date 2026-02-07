@@ -1,0 +1,66 @@
+{
+  "Delhi": {
+    "temp": 15.05,
+    "humidity": 67,
+    "pressure": 1019,
+    "rain_1h": 0,
+    "wind_speed": 0,
+    "clouds": 0
+  },
+  "Mumbai": {
+    "temp": 27.99,
+    "humidity": 69,
+    "pressure": 1014,
+    "rain_1h": 0,
+    "wind_speed": 2.06,
+    "clouds": 6
+  },
+  "Chennai": {
+    "temp": 27.18,
+    "humidity": 69,
+    "pressure": 1015,
+    "rain_1h": 0,
+    "wind_speed": 5.66,
+    "clouds": 40
+  },
+  "Bangalore": {
+    "temp": 19.3,
+    "humidity": 79,
+    "pressure": 1017,
+    "rain_1h": 0,
+    "wind_speed": 5.81,
+    "clouds": 20
+  },
+  "Kolkata": {
+    "temp": 21.97,
+    "humidity": 60,
+    "pressure": 1016,
+    "rain_1h": 0,
+    "wind_speed": 2.57,
+    "clouds": 0
+  },
+  "Pune": {
+    "temp": 24.67,
+    "humidity": 42,
+    "pressure": 1016,
+    "rain_1h": 0,
+    "wind_speed": 1.15,
+    "clouds": 53
+  },
+  "Hyderabad": {
+    "temp": 20.23,
+    "humidity": 83,
+    "pressure": 1017,
+    "rain_1h": 0,
+    "wind_speed": 1.54,
+    "clouds": 20
+  },
+  "Ahmedabad": {
+    "temp": 24.02,
+    "humidity": 60,
+    "pressure": 1015,
+    "rain_1h": 0,
+    "wind_speed": 3.09,
+    "clouds": 0
+  }
+}
