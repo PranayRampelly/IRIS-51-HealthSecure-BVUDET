@@ -1,0 +1,102 @@
+{
+  "Malaria": {
+    "accuracy": 99.81,
+    "precision": 100.0,
+    "recall": 69.23,
+    "f1_score": 81.82,
+    "samples": 10532,
+    "feature_importance": {
+      "Temp Max": 11.28,
+      "Temp Min": 4.08,
+      "Rain": 33.74,
+      "month": 16.11,
+      "temp_7day_avg": 3.84,
+      "temp_30day_avg": 5.2,
+      "rain_7day_sum": 5.77,
+      "rain_30day_sum": 5.58,
+      "temp_range": 11.44,
+      "temp_variability": 2.96
+    },
+    "top_feature": "Rain"
+  },
+  "Dengue": {
+    "accuracy": 99.81,
+    "precision": 100.0,
+    "recall": 33.33,
+    "f1_score": 50.0,
+    "samples": 10532,
+    "feature_importance": {
+      "Temp Max": 4.71,
+      "Temp Min": 2.08,
+      "Rain": 49.49,
+      "month": 13.3,
+      "temp_7day_avg": 4.36,
+      "temp_30day_avg": 2.67,
+      "rain_7day_sum": 6.64,
+      "rain_30day_sum": 6.07,
+      "temp_range": 4.4,
+      "temp_variability": 6.28
+    },
+    "top_feature": "Rain"
+  },
+  "Cholera": {
+    "accuracy": 99.95,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "samples": 10532,
+    "feature_importance": {
+      "Temp Max": 2.44,
+      "Temp Min": 3.83,
+      "Rain": 59.49,
+      "month": 0.66,
+      "temp_7day_avg": 5.13,
+      "temp_30day_avg": 4.86,
+      "rain_7day_sum": 14.44,
+      "rain_30day_sum": 4.12,
+      "temp_range": 2.86,
+      "temp_variability": 2.16
+    },
+    "top_feature": "Rain"
+  },
+  "Heat Stroke": {
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "samples": 10532,
+    "feature_importance": {
+      "Temp Max": 23.83,
+      "Temp Min": 3.98,
+      "Rain": 0.23,
+      "month": 51.05,
+      "temp_7day_avg": 10.49,
+      "temp_30day_avg": 2.92,
+      "rain_7day_sum": 0.63,
+      "rain_30day_sum": 1.4,
+      "temp_range": 3.27,
+      "temp_variability": 2.19
+    },
+    "top_feature": "month"
+  },
+  "Respiratory Diseases": {
+    "accuracy": 99.91,
+    "precision": 100.0,
+    "recall": 97.73,
+    "f1_score": 98.85,
+    "samples": 10532,
+    "feature_importance": {
+      "Temp Max": 32.71,
+      "Temp Min": 7.61,
+      "Rain": 0.22,
+      "month": 36.7,
+      "temp_7day_avg": 9.4,
+      "temp_30day_avg": 7.32,
+      "rain_7day_sum": 0.66,
+      "rain_30day_sum": 1.1,
+      "temp_range": 2.89,
+      "temp_variability": 1.39
+    },
+    "top_feature": "month"
+  }
+}
