@@ -1,0 +1,79 @@
+// Add this function before the updateCache function (around line 627)
+
+// Get real application metrics from database
+const getApplicationMetrics = async () => {
+  try {
+    // Count users by role
+    const totalUsers = await User.countDocuments();
+    const patientCount = await User.countDocuments({ role: 'patient' });
+    const doctorCount = await User.countDocuments({ role: 'doctor' });
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    const pharmacyCount = await User.countDocuments({ role: 'pharmacy' });
+    const bloodBankCount = await User.countDocuments({ role: 'bloodbank' });
+    
+    // Count appointments
+    const totalAppointments = await Appointment.countDocuments();
+    const pendingAppointments = await Appointment.countDocuments({ status: 'pending' });
+    const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
+    
+    // Count health records
+    const totalHealthRecords = await HealthRecord.countDocuments();
+    
+    // Count ambulance bookings
+    const totalAmbulanceBookings = await AmbulanceBooking.countDocuments();
+    const activeAmbulanceBookings = await AmbulanceBooking.countDocuments({
+      'status.current': { $in: ['pending', 'confirmed', 'dispatched', 'en_route', 'arrived'] }
+    });
+    
+    // Count blood requests
+    const totalBloodRequests = await BloodRequest.countDocuments();
+    const pendingBloodRequests = await BloodRequest.countDocuments({ status: 'pending' });
+    const fulfilledBloodRequests = await BloodRequest.countDocuments({ status: 'fulfilled' });
+    
+    // Count active sessions
+    const activeSessions = await Session.countDocuments({
+      expiresAt: { $gt: new Date() }
+    });
+    
+    return {
+      users: {
+        total: totalUsers,
+        patients: patientCount,
+        doctors: doctorCount,
+        admins: adminCount,
+        pharmacies: pharmacyCount,
+        bloodBanks: bloodBankCount
+      },
+      appointments: {
+        total: totalAppointments,
+        pending: pendingAppointments,
+        completed: completedAppointments
+      },
+      healthRecords: {
+        total: totalHealthRecords
+      },
+      ambulance: {
+        total: totalAmbulanceBookings,
+        active: activeAmbulanceBookings
+      },
+      bloodRequests: {
+        total: totalBloodRequests,
+        pending: pendingBloodRequests,
+        fulfilled: fulfilledBloodRequests
+      },
+      sessions: {
+        active: activeSessions
+      }
+    };
+  } catch (error) {
+    console.error('Error getting application metrics:', error);
+    return {
+      users: { total: 0, patients: 0, doctors: 0, admins: 0, pharmacies: 0, bloodBanks: 0 },
+      appointments: { total: 0, pending: 0, completed: 0 },
+      healthRecords: { total: 0 },
+      ambulance: { total: 0, active: 0 },
+      bloodRequests: { total: 0, pending: 0, fulfilled: 0 },
+      sessions: { active: 0 }
+    };
+  }
+};
