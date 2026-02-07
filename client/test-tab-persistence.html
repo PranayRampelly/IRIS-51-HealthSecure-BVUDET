@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Persistence Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tab Persistence Test</h1>
+    
+    <div class="instructions">
+        <h3>How to test:</h3>
+        <ol>
+            <li>Click on different tabs (All Doctors, My Bookings, etc.)</li>
+            <li>Notice the URL changes with the tab parameter</li>
+            <li>Refresh the page (F5 or Ctrl+R)</li>
+            <li>The page should stay on the same tab you were viewing</li>
+        </ol>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="nearby">Nearby</button>
+        <button class="tab" data-tab="all">All Doctors</button>
+        <button class="tab" data-tab="bookings">My Bookings</button>
+        <button class="tab" data-tab="saved">Saved</button>
+        <button class="tab" data-tab="emergency">Emergency</button>
+        <button class="tab" data-tab="family">Family</button>
+    </div>
+
+    <div class="tab-content active" data-tab="nearby">
+        <h2>Nearby Doctors</h2>
+        <p>This tab shows doctors near your location.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <div class="tab-content" data-tab="all">
+        <h2>All Doctors</h2>
+        <p>This tab shows all available doctors.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <div class="tab-content" data-tab="bookings">
+        <h2>My Bookings</h2>
+        <p>This tab shows your appointment bookings.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <div class="tab-content" data-tab="saved">
+        <h2>Saved Doctors</h2>
+        <p>This tab shows your saved/favorite doctors.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <div class="tab-content" data-tab="emergency">
+        <h2>Emergency</h2>
+        <p>This tab shows emergency booking options.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <div class="tab-content" data-tab="family">
+        <h2>Family</h2>
+        <p>This tab shows family appointment options.</p>
+        <p>Current URL: <span id="current-url"></span></p>
+    </div>
+
+    <script>
+        // Get the tab from URL parameters
+        function getTabFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('tab') || 'nearby';
+        }
+
+        // Update URL with tab parameter
+        function updateURL(tab) {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tab);
+            window.history.pushState({}, '', url);
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            // Update active tab button
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+            // Update active tab content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+            // Update URL
+            updateURL(tab);
+
+            // Update URL display
+            document.querySelectorAll('#current-url').forEach(span => {
+                span.textContent = window.location.href;
+            });
+        }
+
+        // Initialize tabs
+        function initTabs() {
+            const currentTab = getTabFromURL();
+            switchTab(currentTab);
+
+            // Add click handlers
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+        }
+
+        // Initialize on page load
+        initTabs();
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', () => {
+            const currentTab = getTabFromURL();
+            switchTab(currentTab);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Profile Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px; margin: 5px; }
+        input { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Pharmacy Profile Completion Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Profile Completion Status</h3>
+        <button onclick="testProfileCompletion()">Test GET /api/pharmacy/profile-completion</button>
+        <div id="profileCompletionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Save Profile Progress</h3>
+        <input type="text" id="businessName" placeholder="Business Name" value="Test Pharmacy">
+        <input type="text" id="email" placeholder="Email" value="test@pharmacy.com">
+        <input type="text" id="phone" placeholder="Phone" value="+91 9876543210">
+        <input type="text" id="licenseNumber" placeholder="License Number" value="DL-TEST-123">
+        <input type="text" id="pharmacyType" placeholder="Pharmacy Type" value="Retail">
+        <input type="text" id="totalExperience" placeholder="Years in Business" value="5">
+        <input type="text" id="address" placeholder="Address" value="123 Test Street">
+        <input type="text" id="city" placeholder="City" value="Mumbai">
+        <input type="text" id="state" placeholder="State" value="Maharashtra">
+        <br><br>
+        <button onclick="testSaveProgress()">Test POST /api/pharmacy/save-profile-progress</button>
+        <div id="saveProgressResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Complete Profile</h3>
+        <input type="file" id="licenseFile" accept=".pdf,.jpg,.jpeg,.png">
+        <input type="file" id="gstFile" accept=".pdf,.jpg,.jpeg,.png">
+        <input type="file" id="panFile" accept=".pdf,.jpg,.jpeg,.png">
+        <br><br>
+        <button onclick="testCompleteProfile()">Test POST /api/pharmacy/complete-profile</button>
+        <div id="completeProfileResult"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:5000/api';
+
+        async function testProfileCompletion() {
+            const resultDiv = document.getElementById('profileCompletionResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/pharmacy/profile-completion`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error ${response.status}: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testSaveProgress() {
+            const resultDiv = document.getElementById('saveProgressResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            const testData = {
+                businessName: document.getElementById('businessName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                licenseNumber: document.getElementById('licenseNumber').value,
+                pharmacyType: document.getElementById('pharmacyType').value,
+                totalExperience: document.getElementById('totalExperience').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value
+            };
+            
+            try {
+                const response = await fetch(`${BASE_URL}/pharmacy/save-profile-progress`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error ${response.status}: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testCompleteProfile() {
+            const resultDiv = document.getElementById('completeProfileResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            const formData = new FormData();
+            
+            // Add profile data
+            formData.append('businessName', document.getElementById('businessName').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('licenseNumber', document.getElementById('licenseNumber').value);
+            formData.append('pharmacyType', document.getElementById('pharmacyType').value);
+            formData.append('totalExperience', document.getElementById('totalExperience').value);
+            formData.append('address', document.getElementById('address').value);
+            formData.append('city', document.getElementById('city').value);
+            formData.append('state', document.getElementById('state').value);
+            
+            // Add files
+            const licenseFile = document.getElementById('licenseFile').files[0];
+            const gstFile = document.getElementById('gstFile').files[0];
+            const panFile = document.getElementById('panFile').files[0];
+            
+            if (licenseFile) formData.append('license', licenseFile);
+            if (gstFile) formData.append('gst', gstFile);
+            if (panFile) formData.append('pan', panFile);
+            
+            try {
+                const response = await fetch(`${BASE_URL}/pharmacy/complete-profile`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error ${response.status}: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
