@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Razorpay Modal Integration */
+.rzp-open {
+  overflow: hidden;
+}
+
+.rzp-open .rzp-modal {
+  z-index: 9999 !important;
+}
+
+/* Ensure our dialogs work properly with Razorpay */
+[data-radix-dialog-content] {
+  z-index: 1000;
+}
+
+/* Payment Success Dialog specific styles */
+.payment-success-dialog {
+  z-index: 1001;
+}
+
+/* Debug panel styles */
+.debug-panel {
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* Ensure proper layering for all modals */
+.rzp-modal {
+  z-index: 9999 !important;
+}
+
+.rzp-modal-backdrop {
+  z-index: 9998 !important;
+}
+
+@layer base {
+  :root {
+    /* Light Theme HSL Colors (25+ colors) */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 175 100% 15%; /* health-teal */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 175 100% 24%; /* health-aqua */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 96%; /* health-light-gray */
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 175 100% 24%; /* health-aqua */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%; /* health-danger */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 175 100% 15%; /* health-teal */
+
+    --radius: 0.5rem;
+
+    /* Sidebar Light Theme */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 175 100% 15%; /* health-teal */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 175 100% 24%; /* health-aqua */
+
+    /* Additional HSL Theme Colors for Light Mode */
+    --success: 120 61% 34%; /* health-success */
+    --success-foreground: 0 0% 100%;
+    --warning: 25 100% 48%; /* health-warning */
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%; /* chart-blue */
+    --info-foreground: 0 0% 100%;
+    --chart-green: 160 84% 39%; /* chart-green */
+    --chart-orange: 38 93% 50%; /* chart-orange */
+    --chart-red: 0 84% 60%; /* chart-red */
+    --chart-purple: 250 47% 60%; /* chart-purple */
+    --chart-cyan: 183 100% 41%; /* chart-cyan */
+    --health-charcoal: 0 0% 26%; /* health-charcoal */
+    --health-blue-gray: 200 13% 41%; /* health-blue-gray */
+    --google-blue: 217 89% 61%; /* google-blue */
+    --google-green: 142 76% 36%; /* google-green */
+    --google-yellow: 45 100% 51%; /* google-yellow */
+    --google-red: 4 90% 58%; /* google-red */
+    --microsoft-red: 6 89% 54%; /* microsoft-red */
+    --microsoft-blue: 199 100% 47%; /* microsoft-blue */
+    --microsoft-green: 74 100% 37%; /* microsoft-green */
+    --microsoft-yellow: 45 100% 50%; /* microsoft-yellow */
+    --gray-utility: 0 0% 53%; /* gray-utility */
+    --react-blue: 237 100% 67%; /* react-blue */
+    --react-cyan: 193 95% 68%; /* react-cyan */
+  }
+
+  .dark {
+    /* Dark Theme HSL Colors (25+ colors) */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 175 100% 24%; /* health-aqua for dark mode */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 175 100% 15%; /* health-teal for dark mode */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 175 100% 15%; /* health-teal for dark mode */
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%; /* health-danger dark */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 175 100% 24%; /* health-aqua */
+
+    /* Sidebar Dark Theme */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 175 100% 24%; /* health-aqua */
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 175 100% 24%; /* health-aqua */
+
+    /* Additional HSL Theme Colors for Dark Mode */
+    --success: 120 61% 34%; /* health-success */
+    --success-foreground: 0 0% 100%;
+    --warning: 25 100% 48%; /* health-warning */
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%; /* chart-blue */
+    --info-foreground: 0 0% 100%;
+    --chart-green: 160 84% 39%; /* chart-green */
+    --chart-orange: 38 93% 50%; /* chart-orange */
+    --chart-red: 0 84% 60%; /* chart-red */
+    --chart-purple: 250 47% 60%; /* chart-purple */
+    --chart-cyan: 183 100% 41%; /* chart-cyan */
+    --health-charcoal: 0 0% 74%; /* health-charcoal lightened for dark mode */
+    --health-blue-gray: 200 13% 61%; /* health-blue-gray lightened for dark mode */
+    --google-blue: 217 89% 61%; /* google-blue */
+    --google-green: 142 76% 36%; /* google-green */
+    --google-yellow: 45 100% 51%; /* google-yellow */
+    --google-red: 4 90% 58%; /* google-red */
+    --microsoft-red: 6 89% 54%; /* microsoft-red */
+    --microsoft-blue: 199 100% 47%; /* microsoft-blue */
+    --microsoft-green: 74 100% 37%; /* microsoft-green */
+    --microsoft-yellow: 45 100% 50%; /* microsoft-yellow */
+    --gray-utility: 0 0% 67%; /* gray-utility lightened for dark mode */
+    --react-blue: 237 100% 67%; /* react-blue */
+    --react-cyan: 193 95% 68%; /* react-cyan */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 121, 107, 0.3) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 121, 107, 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 121, 107, 0.5);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* When Razorpay checkout is open, prevent background dialogs from capturing clicks */
+  html.rzp-open body {
+    pointer-events: auto;
+  }
+  html.rzp-open [data-state="open"].fixed,
+  html.rzp-open .DialogOverlay,
+  html.rzp-open .radix-overlay,
+  html.rzp-open .radix-popover-content,
+  html.rzp-open .radix-dialog-overlay {
+    pointer-events: none !important;
+  }
+}
