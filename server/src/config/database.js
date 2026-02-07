@@ -5,14 +5,14 @@ dotenv.config();
 
 const connectDB = async (retryCount = 0, maxRetries = 3) => {
   try {
-    // Check if MONGODB_URI is defined
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!uri) {
+      throw new Error('Neither MONGODB_URI nor MONGO_URI are defined in environment variables');
     }
 
     if (retryCount > 0) {
       const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000); // Exponential backoff, max 10s
-      console.log(`🔄 Attempting to connect to MongoDB... (Attempt ${retryCount}/${maxRetries})`);
+      console.log(`🔄 Attempting to connect to MongoDB... (Attempt ${retryCount}/${maxRetries}) using ${uri.startsWith('mongodb+srv') ? 'Atlas' : 'Local'}`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
 
@@ -28,7 +28,7 @@ const connectDB = async (retryCount = 0, maxRetries = 3) => {
       retryReads: true
     };
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+    const conn = await mongoose.connect(uri, options);
 
     // Log connection details
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
