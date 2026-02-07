@@ -1,0 +1,152 @@
+{
+  "Malaria": {
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "samples": 162443,
+    "training_samples": 129954,
+    "test_samples": 32489,
+    "positive_cases": 5430,
+    "features_count": 70,
+    "feature_importance": {
+      "Rain": 17.59,
+      "temp_rain_ratio": 14.75,
+      "temp_rain_interaction": 14.06,
+      "rain_7d_max": 11.76,
+      "is_rainy_day": 8.55,
+      "rain_7d_avg": 4.84,
+      "rain_7d_sum": 4.58,
+      "rain_14d_avg": 4.0,
+      "Temp Max": 2.24,
+      "rain_lag_1d": 2.18
+    },
+    "top_feature": "Rain",
+    "trained_on": "2025-11-28T11:53:24.067773",
+    "data_sources": [
+      "city_climate",
+      "aqi",
+      "realtime_api"
+    ]
+  },
+  "Dengue": {
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 99.71,
+    "f1_score": 99.85,
+    "samples": 162443,
+    "training_samples": 129954,
+    "test_samples": 32489,
+    "positive_cases": 1705,
+    "features_count": 70,
+    "feature_importance": {
+      "is_heavy_rain": 15.59,
+      "Rain": 14.21,
+      "rain_7d_max": 11.49,
+      "temp_rain_interaction": 11.08,
+      "temp_rain_ratio": 10.01,
+      "is_rainy_day": 5.59,
+      "rain_30d_max": 5.17,
+      "rain_7d_avg": 4.7,
+      "rain_7d_sum": 3.78,
+      "rain_14d_avg": 3.64
+    },
+    "top_feature": "is_heavy_rain",
+    "trained_on": "2025-11-28T11:56:11.234769",
+    "data_sources": [
+      "city_climate",
+      "aqi",
+      "realtime_api"
+    ]
+  },
+  "Cholera": {
+    "accuracy": 100.0,
+    "precision": 98.57,
+    "recall": 100.0,
+    "f1_score": 99.28,
+    "samples": 162443,
+    "training_samples": 129954,
+    "test_samples": 32489,
+    "positive_cases": 347,
+    "features_count": 70,
+    "feature_importance": {
+      "Rain": 13.7,
+      "rain_7d_max": 11.68,
+      "temp_rain_interaction": 11.04,
+      "is_heavy_rain": 9.89,
+      "temp_rain_ratio": 9.01,
+      "rain_30d_max": 6.99,
+      "rain_14d_avg": 5.72,
+      "rain_7d_avg": 4.88,
+      "rain_90d_max": 4.33,
+      "rain_7d_sum": 3.89
+    },
+    "top_feature": "Rain",
+    "trained_on": "2025-11-28T11:57:40.942652",
+    "data_sources": [
+      "city_climate",
+      "aqi",
+      "realtime_api"
+    ]
+  },
+  "Heat Stroke": {
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "samples": 162443,
+    "training_samples": 129954,
+    "test_samples": 32489,
+    "positive_cases": 12955,
+    "features_count": 70,
+    "feature_importance": {
+      "Temp Max": 19.8,
+      "temp_max_lag_1d": 10.91,
+      "temp_max_7d_avg": 9.82,
+      "temp_avg": 7.65,
+      "temp_max_14d_avg": 7.52,
+      "temp_max_lag_3d": 4.29,
+      "temp_max_30d_avg": 2.62,
+      "temp_max_lag_14d": 2.36,
+      "temp_rain_ratio": 2.27,
+      "temp_max_lag_7d": 1.65
+    },
+    "top_feature": "Temp Max",
+    "trained_on": "2025-11-28T12:01:11.905103",
+    "data_sources": [
+      "city_climate",
+      "aqi",
+      "realtime_api"
+    ]
+  },
+  "Respiratory Diseases": {
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "samples": 162443,
+    "training_samples": 129954,
+    "test_samples": 32489,
+    "positive_cases": 2684,
+    "features_count": 70,
+    "feature_importance": {
+      "Temp Max": 15.23,
+      "temp_avg": 13.83,
+      "temp_max_7d_avg": 7.8,
+      "temp_max_lag_1d": 7.62,
+      "temp_max_14d_avg": 6.19,
+      "temp_min_14d_avg": 5.37,
+      "temp_min_7d_avg": 4.38,
+      "temp_max_lag_3d": 3.1,
+      "temp_min_30d_avg": 2.72,
+      "temp_max_30d_avg": 2.7
+    },
+    "top_feature": "Temp Max",
+    "trained_on": "2025-11-28T12:04:55.191604",
+    "data_sources": [
+      "city_climate",
+      "aqi",
+      "realtime_api"
+    ]
+  }
+}
