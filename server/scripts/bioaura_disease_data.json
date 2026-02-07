@@ -1,0 +1,57 @@
+{
+    "metadata": {
+        "cities": [
+            "Delhi",
+            "Mumbai",
+            "Chennai",
+            "Bangalore",
+            "Kolkata",
+            "Pune",
+            "Hyderabad",
+            "Ahmedabad"
+        ],
+        "diseases": [
+            "Malaria",
+            "Dengue",
+            "Cholera",
+            "Heat Stroke",
+            "Respiratory Diseases"
+        ],
+        "generatedAt": "2025-11-26T12:20:00.000Z",
+        "dataSource": "Real historical climate data from UsefulDataset - Temperature and Rainfall data for 8 Indian cities (1951-2024)",
+        "description": "Disease risk predictions based on actual climate patterns, temperature ranges, and rainfall data"
+    },
+    "diseaseInfo": {
+        "Malaria": {
+            "optimalTemp": "20-30°C",
+            "rainfallImpact": "High",
+            "peakSeason": "July-October (Monsoon)",
+            "description": "Vector-borne disease transmitted by mosquitoes, thrives in warm, humid conditions with standing water"
+        },
+        "Dengue": {
+            "optimalTemp": "22-32°C",
+            "rainfallImpact": "High",
+            "peakSeason": "July-November",
+            "description": "Mosquito-borne viral infection, breeding increases during and after monsoon"
+        },
+        "Cholera": {
+            "optimalTemp": "15-35°C",
+            "rainfallImpact": "Very High",
+            "peakSeason": "June-September (Flooding)",
+            "description": "Water-borne disease, risk increases with flooding and contaminated water sources"
+        },
+        "Heat Stroke": {
+            "optimalTemp": "35-50°C",
+            "rainfallImpact": "Low (Inverse)",
+            "peakSeason": "April-June (Summer)",
+            "description": "Heat-related illness occurring during extreme temperatures and low humidity"
+        },
+        "Respiratory Diseases": {
+            "optimalTemp": "10-25°C",
+            "rainfallImpact": "Medium",
+            "peakSeason": "November-February (Winter)",
+            "description": "Includes flu, pneumonia, bronchitis - more common in cooler, drier months"
+        }
+    },
+    "note": "This data is processed from real historical climate records. Risk scores are calculated using scientific correlation models between climate factors (temperature, rainfall, seasonality) and disease prevalence patterns."
+}
