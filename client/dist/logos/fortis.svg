@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40" viewBox="0 0 300 80">
+  <rect width="300" height="80" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="150" y="50" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#00FF00" text-anchor="middle">FORTIS</text>
+  <text x="150" y="70" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="middle">HEALTHCARE</text>
+</svg>
+
