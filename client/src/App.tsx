@@ -73,6 +73,7 @@ import HospitalDiscovery from "./pages/patient/HospitalDiscovery";
 import RequestAdmission from "./pages/patient/RequestAdmission";
 import AdmissionRequests from "./pages/patient/AdmissionRequests";
 import PatientAIAssistant from "./pages/patient/PatientAIAssistant";
+import PatientMessages from "./pages/patient/PatientMessages";
 import HospitalAdmissionRequests from "./pages/hospital/AdmissionRequests";
 
 // Doctor Dashboard Pages
@@ -334,6 +335,7 @@ const App = () => {
                 <Route path="hospital-discovery" element={<HospitalDiscovery />} />
                 <Route path="request-admission" element={<RequestAdmission />} />
                 <Route path="admission-requests" element={<AdmissionRequests />} />
+                <Route path="messages" element={<PatientMessages />} />
                 <Route path="ai-assistant" element={<PatientAIAssistant />} />
               </Route>
 

@@ -58,7 +58,7 @@ interface Contact {
   online?: boolean;
 }
 
-const DoctorMessages: React.FC = () => {
+const PatientMessages: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<string>('');
   const [messageText, setMessageText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,7 +125,7 @@ const DoctorMessages: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
-        // Filter out current user
+        // Filter out current user if backend didn't
         const filteredResults = response.data.data.filter((u: any) => u._id !== currentUserId);
         setSearchResults(filteredResults);
       }
@@ -293,7 +293,7 @@ const DoctorMessages: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-health-charcoal">Messages</h1>
-          <p className="text-health-blue-gray mt-2">Communicate with patients and colleagues</p>
+          <p className="text-health-blue-gray mt-2">Communicate with your doctors</p>
         </div>
         <div className="flex items-center space-x-2">
           {isConnected ? (
@@ -544,4 +544,4 @@ const DoctorMessages: React.FC = () => {
   );
 };
 
-export default DoctorMessages;
+export default PatientMessages;

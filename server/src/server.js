@@ -78,6 +78,7 @@ import bedAvailabilityRoutes from './routes/bedAvailability.js';
 import bioAuraRoutes from './routes/bioAura.js';
 import bloodbankRoutes from './routes/bloodbank.js';
 import hospitalDischargeRoutes from './routes/hospitalDischarge.js';
+import messagesRoutes from './routes/messages.js';
 
 import jwt from 'jsonwebtoken';
 
@@ -130,6 +131,7 @@ const corsOptions = {
       'http://localhost:5000',
       'http://localhost:5173',
       'http://localhost:8080',
+      'http://localhost:8081',
       'https://healthsecuree.netlify.app',
       'https://healthsecure.netlify.app',
       'https://heathsecure1.vercel.app',
@@ -196,7 +198,8 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrc: ["'self'", "'unsafe-inline'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "wss:", "https:"]
+    connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "http://localhost:5173"],
+    mediaSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "blob:", "data:"],
   }
 }));
 
@@ -220,16 +223,29 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Disable caching for API responses to avoid 304 with empty body issues in SPA
+// 1. Static files (Must be BEFORE cache control to allow Range requests for audio/video)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res, path) => {
+    // Explicitly set audio MIME type for recordings
+    if (path.endsWith('.webm')) {
+      res.set('Content-Type', 'audio/webm');
+    }
+    // Allow range requests
+    res.set('Accept-Ranges', 'bytes');
+    // Allow CORS for static files
+    res.set('Access-Control-Allow-Origin', '*');
+  }
+}));
+
+// 2. Disable caching for API responses to avoid 304 with empty body issues in SPA
 app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
+  if (req.path.startsWith('/api')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
   next();
 });
-
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -337,6 +353,9 @@ app.use('/api/time-slots', timeSlotRoutes);
 
 // Payment routes
 app.use('/api/payments', paymentRoutes);
+
+// Messages routes
+app.use('/api/messages', messagesRoutes);
 
 // Blood Inventory routes
 app.use('/api/blood-inventory', bloodInventoryRoutes);
@@ -534,10 +553,15 @@ initSlotSocket(realtimeService.io);
 // Initialize server
 const startServer = async () => {
   try {
-    // Connect to MongoDB first
-    await connectDB();
+    // Try to connect to MongoDB (won't throw error if it fails)
+    const dbConnection = await connectDB();
 
-    // Start the server
+    if (!dbConnection) {
+      console.warn('⚠️  Starting server without database connection');
+      console.warn('⚠️  Some API endpoints may not work properly');
+    }
+
+    // Start the server regardless of database connection status
     server.listen(PORT, () => {
       console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);

@@ -31,7 +31,7 @@ class RealtimeService {
 
     this.setupMiddleware();
     this.setupEventHandlers();
-    
+
     console.log('🚀 Real-time service initialized');
   }
 
@@ -40,7 +40,7 @@ class RealtimeService {
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-        
+
         if (!token) {
           console.log('Socket connection without token - allowing for now');
           socket.user = null; // No user authenticated
@@ -49,17 +49,18 @@ class RealtimeService {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId || decoded.id).select('-password');
-        
+
         if (!user) {
-          console.log('Socket connection with invalid user - allowing for now');
+          console.log(`❌ Socket connection with invalid user ID: ${decoded.userId || decoded.id}`);
           socket.user = null;
           return next();
         }
 
         socket.user = user;
+        console.log(`✅ Socket authenticated for user: ${user.firstName} ${user.lastName} (${user.role})`);
         next();
       } catch (error) {
-        console.error('Socket authentication error:', error.message);
+        console.error('❌ Socket authentication error:', error.message);
         // Allow connection even if auth fails
         socket.user = null;
         next();
@@ -74,7 +75,7 @@ class RealtimeService {
       } else {
         console.log(`🔌 Anonymous user connected: ${socket.id}`);
       }
-      
+
       this.handleConnection(socket);
       this.setupUserEvents(socket);
       this.setupHospitalEvents(socket);
@@ -82,7 +83,8 @@ class RealtimeService {
       this.setupEmergencyEvents(socket);
       this.setupAppointmentEvents(socket);
       this.setupAdmissionEvents(socket);
-      
+      this.setupMessagingEvents(socket);
+
       socket.on('disconnect', () => {
         this.handleDisconnection(socket);
       });
@@ -94,21 +96,21 @@ class RealtimeService {
       // Handle anonymous connections
       return;
     }
-    
+
     const userId = socket.user._id.toString();
     const userRole = socket.user.role;
-    
+
     // Store connected user
     this.connectedUsers.set(userId, socket);
-    
+
     // Join user-specific room
     socket.join(`user:${userId}`);
     this.userRooms.set(userId, [`user:${userId}`]);
-    
+
     // Join role-specific room
     socket.join(`role:${userRole}`);
     this.userRooms.get(userId).push(`role:${userRole}`);
-    
+
     // Join hospital room if user is hospital staff or patient
     if (userRole === 'hospital') {
       socket.join(`hospital:${userId}`);
@@ -122,7 +124,7 @@ class RealtimeService {
       socket.join(`patient:${userId}`);
       this.userRooms.get(userId).push(`patient:${userId}`);
     }
-    
+
     // Emit user online status
     this.io.to(`role:${userRole}`).emit('user:online', {
       userId,
@@ -141,15 +143,15 @@ class RealtimeService {
       console.log(`🔌 Anonymous user disconnected: ${socket.id}`);
       return;
     }
-    
+
     const userId = socket.user._id.toString();
     const userRole = socket.user.role;
     console.log(`🔌 User disconnected: ${socket.user.firstName} ${socket.user.lastName} (${socket.user.role})`);
-    
+
     // Remove from connected users
     this.connectedUsers.delete(userId);
     this.userRooms.delete(userId);
-    
+
     // Emit user offline status
     this.io.to(`role:${userRole}`).emit('user:offline', {
       userId,
@@ -242,7 +244,7 @@ class RealtimeService {
 
       // Broadcast emergency alert to all hospital staff
       this.io.to(`hospital:${socket.user._id}`).emit('hospital:emergency:alert', alert);
-      
+
       // Also send to emergency response system
       this.io.to('emergency:response').emit('emergency:alert', alert);
     });
@@ -260,7 +262,7 @@ class RealtimeService {
 
       // Broadcast to hospital staff
       this.io.to(`hospital:${socket.user._id}`).emit('bed:status:updated', update);
-      
+
       // Also send to patients if bed becomes available
       if (status === 'available') {
         this.io.to('patients:waiting').emit('bed:available', update);
@@ -280,7 +282,7 @@ class RealtimeService {
 
       // Broadcast to hospital staff
       this.io.to(`hospital:${socket.user._id}`).emit('doctor:availability:updated', update);
-      
+
       // Send to patients with appointments
       this.io.to(`doctor:${doctorId}`).emit('doctor:availability:updated', update);
     });
@@ -299,7 +301,7 @@ class RealtimeService {
 
       // Broadcast to hospital staff
       this.io.to(`hospital:${socket.user._id}`).emit('department:status:updated', update);
-      
+
       // Send to patients
       this.io.to('patients:waiting').emit('department:status:updated', update);
     });
@@ -354,7 +356,7 @@ class RealtimeService {
 
       // Send to emergency response system
       this.io.to('emergency:response').emit('emergency:request', emergencyRequest);
-      
+
       // Also send to nearby hospitals
       this.io.to('hospital:nearby').emit('emergency:request', emergencyRequest);
     });
@@ -403,7 +405,7 @@ class RealtimeService {
 
       // Broadcast to all emergency responders
       this.io.to('emergency:response').emit('emergency:call:new', emergencyCall);
-      
+
       // Send to nearby hospitals
       this.io.to('hospital:nearby').emit('emergency:call:new', emergencyCall);
     });
@@ -424,7 +426,7 @@ class RealtimeService {
       if (this.emergencyRooms.has(emergencyId)) {
         this.io.to(`emergency:${emergencyId}`).emit('emergency:response:updated', update);
       }
-      
+
       // Also broadcast to emergency response system
       this.io.to('emergency:response').emit('emergency:response:updated', update);
     });
@@ -435,7 +437,7 @@ class RealtimeService {
     socket.on('appointment:join', (data) => {
       const { appointmentId } = data;
       socket.join(`appointment:${appointmentId}`);
-      
+
       if (!this.userRooms.has(socket.user._id.toString())) {
         this.userRooms.set(socket.user._id.toString(), []);
       }
@@ -446,7 +448,7 @@ class RealtimeService {
     socket.on('slot:lock', async (data) => {
       const { doctorId, date, time, patientId, duration = 30 } = data;
       const slotKey = `${doctorId}:${date}:${time}`;
-      
+
       try {
         // Check if slot is available
         const existingAppointment = await Appointment.findOne({
@@ -483,7 +485,7 @@ class RealtimeService {
 
         // Broadcast slot locked to all users viewing this doctor's calendar
         this.io.to(`doctor:${doctorId}`).emit('slot:locked', lockData);
-        
+
         // Confirm lock to the requesting user
         socket.emit('slot:locked', lockData);
 
@@ -514,10 +516,10 @@ class RealtimeService {
     socket.on('slot:unlock', (data) => {
       const { doctorId, date, time } = data;
       const slotKey = `${doctorId}:${date}:${time}`;
-      
+
       if (this.slotLocks && this.slotLocks.has(slotKey)) {
         this.slotLocks.delete(slotKey);
-        
+
         // Broadcast slot unlocked
         this.io.to(`doctor:${doctorId}`).emit('slot:unlocked', {
           doctorId,
@@ -560,7 +562,7 @@ class RealtimeService {
     socket.on('doctor:calendar:join', (data) => {
       const { doctorId } = data;
       socket.join(`doctor:${doctorId}`);
-      
+
       if (!this.userRooms.has(socket.user._id.toString())) {
         this.userRooms.set(socket.user._id.toString(), []);
       }
@@ -570,7 +572,7 @@ class RealtimeService {
     // Real-time payment processing for step 3
     socket.on('payment:initiate', async (data) => {
       const { appointmentId, paymentMethod, amount } = data;
-      
+
       try {
         // Emit payment initiation event
         this.io.to(`appointment:${appointmentId}`).emit('payment:initiated', {
@@ -611,7 +613,7 @@ class RealtimeService {
     // Payment verification
     socket.on('payment:verify', async (data) => {
       const { appointmentId, paymentId, signature } = data;
-      
+
       try {
         // Emit payment verification event
         this.io.to(`appointment:${appointmentId}`).emit('payment:verifying', {
@@ -642,7 +644,7 @@ class RealtimeService {
     // Appointment confirmation for step 4
     socket.on('appointment:confirm', async (data) => {
       const { appointmentId, patientNotes, emergencyContact } = data;
-      
+
       try {
         // Update appointment with final details
         const appointment = await Appointment.findById(appointmentId);
@@ -699,7 +701,7 @@ class RealtimeService {
 
       // Update appointment room
       this.io.to(`appointment:${appointmentId}`).emit('appointment:status:updated', update);
-      
+
       // Also send notification to patient
       try {
         const appointment = await Appointment.findById(appointmentId).populate('patient');
@@ -740,7 +742,7 @@ class RealtimeService {
     // Real-time appointment progress tracking
     socket.on('appointment:progress:update', (data) => {
       const { appointmentId, step, progress } = data;
-      
+
       this.io.to(`appointment:${appointmentId}`).emit('appointment:progress:updated', {
         appointmentId,
         step,
@@ -755,7 +757,7 @@ class RealtimeService {
     socket.on('admission:join', (data) => {
       const { admissionId } = data;
       socket.join(`admission:${admissionId}`);
-      
+
       if (!this.userRooms.has(socket.user._id.toString())) {
         this.userRooms.set(socket.user._id.toString(), []);
       }
@@ -854,6 +856,176 @@ class RealtimeService {
       }
     }
     return staff;
+  }
+
+  setupMessagingEvents(socket) {
+    if (!socket.user) return;
+
+    // Join user's messaging room
+    socket.join(`user:${socket.user._id}`);
+
+    // Text message sending
+    socket.on('message:text:send', async (data) => {
+      try {
+        const { receiverId, content } = data;
+
+        if (!content || !receiverId) {
+          socket.emit('message:error', { message: 'Missing required fields' });
+          return;
+        }
+
+        // Import Message model dynamically to avoid circular dependencies
+        const Message = (await import('../models/Message.js')).default;
+
+        const message = await Message.create({
+          sender: socket.user._id,
+          receiver: receiverId,
+          messageType: 'text',
+          content
+        });
+
+        await message.populate('sender receiver', 'firstName lastName email role avatar');
+
+        // Send to receiver
+        this.io.to(`user:${receiverId}`).emit('message:new', message);
+
+        // Confirm to sender
+        socket.emit('message:sent', message);
+
+      } catch (error) {
+        console.error('Error sending text message:', error);
+        socket.emit('message:error', { message: 'Failed to send message', error: error.message });
+      }
+    });
+
+    // Voice message sending
+    socket.on('message:voice:send', async (data) => {
+      try {
+        const { receiverId, audioBlob, audioDuration, audioFormat } = data;
+
+        if (!audioBlob || !receiverId || !audioDuration) {
+          socket.emit('message:error', { message: 'Missing required fields' });
+          return;
+        }
+
+        // Validate audio duration (max 30 seconds)
+        if (audioDuration > 30) {
+          socket.emit('message:error', { message: 'Audio duration exceeds 30 seconds' });
+          return;
+        }
+
+        // Validate audio size (max 5MB)
+        const audioSize = Buffer.byteLength(audioBlob, 'base64');
+        if (audioSize > 5 * 1024 * 1024) {
+          socket.emit('message:error', { message: 'Audio file size exceeds 5MB' });
+          return;
+        }
+
+        // Import required modules
+        const Message = (await import('../models/Message.js')).default;
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+        const crypto = await import('crypto');
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = path.join(__dirname, '../../uploads/voice-messages');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        // Generate unique filename
+        const fileExtension = audioFormat || 'webm';
+        const filename = `${crypto.randomUUID()}.${fileExtension}`;
+        const filepath = path.join(uploadsDir, filename);
+
+        // Convert base64 to buffer and save file
+        const audioBuffer = Buffer.from(audioBlob, 'base64');
+        fs.writeFileSync(filepath, audioBuffer);
+
+        // Create message in database
+        const message = await Message.create({
+          sender: socket.user._id,
+          receiver: receiverId,
+          messageType: 'voice',
+          audioUrl: `/uploads/voice-messages/${filename}`,
+          audioDuration,
+          audioFormat: fileExtension,
+          audioSize
+        });
+
+        await message.populate('sender receiver', 'firstName lastName email role avatar');
+
+        // Send to receiver
+        this.io.to(`user:${receiverId}`).emit('message:voice:new', message);
+
+        // Confirm to sender
+        socket.emit('message:voice:sent', message);
+
+        console.log(`Voice message sent from ${socket.user._id} to ${receiverId}`);
+
+      } catch (error) {
+        console.error('Error sending voice message:', error);
+        socket.emit('message:error', { message: 'Failed to send voice message', error: error.message });
+      }
+    });
+
+    // Mark message as read
+    socket.on('message:read', async (data) => {
+      try {
+        const { messageId } = data;
+
+        const Message = (await import('../models/Message.js')).default;
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+          socket.emit('message:error', { message: 'Message not found' });
+          return;
+        }
+
+        // Only receiver can mark as read
+        if (message.receiver.toString() !== socket.user._id.toString()) {
+          socket.emit('message:error', { message: 'Not authorized' });
+          return;
+        }
+
+        await message.markAsRead();
+
+        // Notify sender
+        this.io.to(`user:${message.sender}`).emit('message:read:update', {
+          messageId: message._id,
+          readAt: message.readAt
+        });
+
+        socket.emit('message:read:confirmed', { messageId: message._id });
+
+      } catch (error) {
+        console.error('Error marking message as read:', error);
+        socket.emit('message:error', { message: 'Failed to mark message as read', error: error.message });
+      }
+    });
+
+    // Typing indicator
+    socket.on('message:typing:start', (data) => {
+      const { receiverId } = data;
+      this.io.to(`user:${receiverId}`).emit('message:typing', {
+        userId: socket.user._id,
+        user: {
+          firstName: socket.user.firstName,
+          lastName: socket.user.lastName
+        }
+      });
+    });
+
+    socket.on('message:typing:stop', (data) => {
+      const { receiverId } = data;
+      this.io.to(`user:${receiverId}`).emit('message:typing:stop', {
+        userId: socket.user._id
+      });
+    });
   }
 }
 

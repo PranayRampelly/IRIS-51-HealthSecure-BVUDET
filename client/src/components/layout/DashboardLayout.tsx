@@ -69,6 +69,7 @@ const navigationMap: Record<string, NavItem[]> = {
   patient: [
     // Main Dashboard
     { name: 'Dashboard Home', href: '/patient/dashboard', icon: Home },
+    { name: 'Messages', href: '/patient/messages', icon: MessageSquare },
 
     // Health Records Section
     { name: 'My Records', href: '/patient/records', icon: FileText },
@@ -268,6 +269,14 @@ const patientNavigationSections: NavSection[] = [
       { name: 'Health Insights', href: '/patient/health-insights', icon: Target },
       { name: 'Health Tracking', href: '/patient/health-tracking', icon: Heart },
       { name: 'Smart Notifications', href: '/patient/notifications', icon: Bell },
+    ]
+  },
+  {
+    title: 'Communication',
+    icon: MessageSquare,
+    items: [
+      { name: 'Messages', href: '/patient/messages', icon: MessageSquare },
+      { name: 'Support', href: '/patient/help', icon: HelpCircle },
     ]
   },
   {
@@ -697,8 +706,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -764,8 +773,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -831,8 +840,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -895,8 +904,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -932,8 +941,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                     key={item.name}
                     to={item.href}
                     className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                        ? 'bg-health-aqua text-white'
-                        : 'text-white hover:bg-health-aqua/20'
+                      ? 'bg-health-aqua text-white'
+                      : 'text-white hover:bg-health-aqua/20'
                       }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />

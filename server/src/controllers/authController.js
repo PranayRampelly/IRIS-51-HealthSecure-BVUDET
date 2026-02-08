@@ -57,14 +57,14 @@ export const register = async (req, res) => {
     // Add role-specific validation
     if (role === 'patient') {
       if (!otherFields.dateOfBirth || !otherFields.bloodType) {
-        return res.status(400).json({ 
-          message: 'Date of birth and blood type are required for patients' 
+        return res.status(400).json({
+          message: 'Date of birth and blood type are required for patients'
         });
       }
     } else if (role === 'doctor') {
       if (!otherFields.licenseNumber || !otherFields.specialization || !otherFields.hospital) {
-        return res.status(400).json({ 
-          message: 'License number, specialization, and hospital are required for doctors' 
+        return res.status(400).json({
+          message: 'License number, specialization, and hospital are required for doctors'
         });
       }
     } else if (role === 'insurance') {
@@ -75,14 +75,14 @@ export const register = async (req, res) => {
       }
     } else if (role === 'hospital') {
       if (!otherFields.hospitalName || !otherFields.licenseNumber || !otherFields.hospitalType) {
-        return res.status(400).json({ 
-          message: 'Hospital name, license number, and hospital type are required for hospital signup' 
+        return res.status(400).json({
+          message: 'Hospital name, license number, and hospital type are required for hospital signup'
         });
       }
     } else if (role === 'bloodbank') {
       if (!otherFields.bloodBankName || !otherFields.bloodBankLicense || !otherFields.bloodBankType) {
-        return res.status(400).json({ 
-          message: 'Blood bank name, license number, and blood bank type are required for blood bank signup' 
+        return res.status(400).json({
+          message: 'Blood bank name, license number, and blood bank type are required for blood bank signup'
         });
       }
     } else if (role === 'researcher') {
@@ -103,8 +103,8 @@ export const register = async (req, res) => {
     } else if (role === 'admin') {
       // Admin registration should be restricted in production
       if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ 
-          message: 'Admin registration is not allowed in production' 
+        return res.status(403).json({
+          message: 'Admin registration is not allowed in production'
         });
       }
     }
@@ -123,7 +123,7 @@ export const register = async (req, res) => {
           pass: process.env.EMAIL_PASS
         }
       });
-      
+
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
@@ -215,15 +215,15 @@ export const login = async (req, res) => {
     });
     // Log the login
     await logAccess(user._id, 'LOGIN', 'User', user._id, null, req, 'User logged in successfully');
-    
+
     // Check if profile is complete based on role
     const isProfileComplete = user.isProfileComplete();
-    
+
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -246,7 +246,7 @@ export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     // Add debugging for profile data based on role
     if (user.role === 'doctor') {
       console.log('Doctor profile data being returned:', {
@@ -297,7 +297,7 @@ export const getMe = async (req, res) => {
         documents: user.documents
       });
     }
-    
+
     res.json(user); // Return all fields except password
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -332,7 +332,7 @@ export const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user._id);
-    
+
     // Verify current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
@@ -348,7 +348,7 @@ export const changePassword = async (req, res) => {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Verify email
 // @route   GET /api/auth/verify-email?token=...
@@ -377,12 +377,12 @@ export const verifyEmail = async (req, res) => {
     delete userData.verificationExpires;
     delete userData.createdAt;
     userData.isEmailVerified = true;
-    
+
     // Remove patientId if it exists (let the pre-save hook generate a new one)
     if (userData.patientId) {
       delete userData.patientId;
     }
-    
+
     // Use new User() constructor to ensure pre-save hooks run (for patient ID generation)
     const user = new User(userData);
     await user.save();
@@ -393,7 +393,7 @@ export const verifyEmail = async (req, res) => {
     console.error('Email verification error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Check if email is verified
 // @route   GET /api/auth/check-email-verified?email=...
@@ -439,7 +439,7 @@ export const resendEmailVerification = async (req, res) => {
     // Update pending user with new token
     await PendingUser.updateOne(
       { email },
-      { 
+      {
         verificationToken: emailVerificationToken,
         verificationExpires: emailVerificationExpires
       }
@@ -457,7 +457,7 @@ export const resendEmailVerification = async (req, res) => {
           pass: process.env.EMAIL_PASS
         }
       });
-      
+
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
@@ -490,7 +490,7 @@ export const resendEmailVerification = async (req, res) => {
       res.json({ message: 'Verification email sent successfully' });
     } catch (emailError) {
       console.error('Email sending error:', emailError);
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Failed to send verification email. Please try again later.',
         note: 'Email service temporarily unavailable'
       });
@@ -499,7 +499,7 @@ export const resendEmailVerification = async (req, res) => {
     console.error('Resend verification error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Setup 2FA (generate secret and QR code)
 // @route   POST /api/auth/2fa/setup
@@ -510,9 +510,9 @@ export const setup2FA = async (req, res) => {
     console.log('2FA Setup Request body:', req.body);
     let user;
     const { email, token } = req.body;
-    
+
     console.log('2FA Setup Request:', { email, token, hasUser: !!req.user });
-    
+
     if (req.user) {
       // User is authenticated via JWT
       user = await User.findById(req.user._id);
@@ -523,22 +523,22 @@ export const setup2FA = async (req, res) => {
       // Try to find user by verification token (fallback)
       user = await User.findOne({ emailVerificationToken: token });
     }
-    
+
     if (!user) {
       console.log('User not found for 2FA setup');
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     if (user.twoFactorEnabled) {
       return res.status(400).json({ message: '2FA already enabled' });
     }
 
     // Generate secret
-    const secret = speakeasy.generateSecret({ 
+    const secret = speakeasy.generateSecret({
       name: `ProofHealth (${user.email})`,
       issuer: 'ProofHealth'
     });
-    
+
     user.twoFactorSecret = secret.base32;
     await user.save();
 
@@ -566,9 +566,9 @@ export const verify2FA = async (req, res) => {
   try {
     const { code, email, token } = req.body;
     let user;
-    
+
     console.log('2FA Verify Request:', { email, token, hasUser: !!req.user });
-    
+
     if (req.user) {
       user = await User.findById(req.user._id);
     } else if (email) {
@@ -578,7 +578,7 @@ export const verify2FA = async (req, res) => {
       // Try to find user by verification token (fallback)
       user = await User.findOne({ emailVerificationToken: token });
     }
-    
+
     if (!user || !user.twoFactorSecret) {
       return res.status(400).json({ message: '2FA not set up' });
     }
@@ -591,27 +591,27 @@ export const verify2FA = async (req, res) => {
       token: code,
       window: 1
     });
-    
+
     if (!verified) {
       return res.status(400).json({ message: 'Invalid 2FA code' });
     }
 
     user.twoFactorEnabled = true;
     user.isFullyActivated = true;
-    
+
     // Generate backup codes
     const backupCodes = generateBackupCodes();
     user.backupCodes = await Promise.all(backupCodes.map(async c => await bcrypt.hash(c, 10)));
     await user.save();
-    
+
     console.log('2FA verification successful for user:', user.email);
-    
+
     res.json({ message: '2FA enabled successfully', backupCodes });
   } catch (error) {
     console.error('2FA verify error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 export const getSessions = async (req, res) => {
   try {
@@ -629,10 +629,10 @@ export const revokeSession = async (req, res) => {
     if (!session) return res.status(404).json({ message: 'Session not found' });
     session.revoked = true;
     await session.save();
-    
+
     // Log the session revocation
     await logAccess(req.user._id, 'REVOKE_SESSION', 'Session', sessionId, null, req, 'Session revoked');
-    
+
     res.json({ message: 'Session revoked' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -646,13 +646,13 @@ export const logout = async (req, res) => {
   try {
     // Log the logout
     await logAccess(req.user._id, 'LOGOUT', 'User', req.user._id, null, req, 'User logged out');
-    
+
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Logout user from all sessions
 // @route   POST /api/auth/logout-all
@@ -664,10 +664,10 @@ export const logoutAll = async (req, res) => {
       { userId: req.user._id, revoked: false },
       { revoked: true }
     );
-    
+
     // Log the logout from all sessions
     await logAccess(req.user._id, 'LOGOUT_ALL', 'User', req.user._id, null, req, 'User logged out from all sessions');
-    
+
     res.json({ message: 'Logged out from all sessions successfully' });
   } catch (error) {
     console.error('Logout all error:', error);
@@ -703,7 +703,7 @@ export const login2FA = async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -714,7 +714,7 @@ export const login2FA = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // Generate registration options
 export const generateWebAuthnRegistrationOptions = async (req, res) => {
@@ -839,7 +839,7 @@ export const verifyWebAuthnAuth = async (req, res) => {
 export const getUsersByRole = async (req, res) => {
   try {
     const { role } = req.query;
-    
+
     if (!role) {
       return res.status(400).json({ message: 'Role parameter is required' });
     }
@@ -850,7 +850,7 @@ export const getUsersByRole = async (req, res) => {
     }
 
     const users = await User.find({ role }).select('firstName lastName email _id');
-    
+
     res.json({
       users,
       count: users.length

@@ -69,7 +69,10 @@ const connectDB = async (retryCount = 0, maxRetries = 3) => {
     } else {
       console.error('❌ Failed to connect to MongoDB after maximum retries');
       console.error('Please check your MONGODB_URI environment variable');
-      throw error;
+      console.warn('⚠️  Server will continue without database connection');
+      console.warn('⚠️  API endpoints requiring database will not work');
+      // Don't throw error - allow server to start for testing
+      return null;
     }
   }
 };
