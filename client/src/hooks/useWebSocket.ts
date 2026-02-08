@@ -19,12 +19,16 @@ interface Message {
         role: string;
         avatar?: string;
     };
-    messageType: 'text' | 'voice';
+    messageType: 'text' | 'voice' | 'image' | 'document';
     content?: string;
     audioUrl?: string;
     audioDuration?: number;
     audioFormat?: string;
     audioSize?: number;
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    fileFormat?: string;
     read: boolean;
     readAt?: Date;
     delivered: boolean;
@@ -38,6 +42,8 @@ interface UseWebSocketReturn {
     isConnected: boolean;
     sendTextMessage: (receiverId: string, content: string) => void;
     sendVoiceMessage: (receiverId: string, audioBlob: Blob, audioDuration: number, audioFormat: string) => Promise<void>;
+    sendImageMessage: (receiverId: string, imageBlob: Blob, imageFormat: string) => Promise<void>;
+    sendDocumentMessage: (receiverId: string, docBlob: Blob, docName: string, docFormat: string) => Promise<void>;
     markMessageAsRead: (messageId: string) => void;
     onNewMessage: (callback: (message: Message) => void) => (() => void);
     onVoiceMessage: (callback: (message: Message) => void) => (() => void);
@@ -152,8 +158,78 @@ export const useWebSocket = (): UseWebSocketReturn => {
                 audioFormat
             });
         } catch (err) {
-            console.error('Error converting audio to base64 or sending voice message:', err);
+            console.error('Error sending voice message:', err);
             setError('Failed to send voice message');
+            throw err;
+        }
+    }, [isConnected]);
+
+    const sendImageMessage = useCallback(async (
+        receiverId: string,
+        imageBlob: Blob,
+        imageFormat: string
+    ): Promise<void> => {
+        if (!socketRef.current || !isConnected) {
+            setError('Not connected to server');
+            throw new Error('Not connected to server');
+        }
+
+        try {
+            // Convert blob to base64
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(imageBlob);
+            });
+
+            socketRef.current.emit('message:image:send', {
+                receiverId,
+                imageBlob: base64Image,
+                imageFormat
+            });
+        } catch (err) {
+            console.error('Error sending image message:', err);
+            setError('Failed to send image message');
+            throw err;
+        }
+    }, [isConnected]);
+
+    const sendDocumentMessage = useCallback(async (
+        receiverId: string,
+        docBlob: Blob,
+        docName: string,
+        docFormat: string
+    ): Promise<void> => {
+        if (!socketRef.current || !isConnected) {
+            setError('Not connected to server');
+            throw new Error('Not connected to server');
+        }
+
+        try {
+            // Convert blob to base64
+            const base64Doc = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(docBlob);
+            });
+
+            socketRef.current.emit('message:document:send', {
+                receiverId,
+                docBlob: base64Doc,
+                docName,
+                docFormat
+            });
+        } catch (err) {
+            console.error('Error sending document message:', err);
+            setError('Failed to send document message');
             throw err;
         }
     }, [isConnected]);
@@ -242,6 +318,8 @@ export const useWebSocket = (): UseWebSocketReturn => {
         isConnected,
         sendTextMessage,
         sendVoiceMessage,
+        sendImageMessage,
+        sendDocumentMessage,
         markMessageAsRead,
         onNewMessage,
         onVoiceMessage,

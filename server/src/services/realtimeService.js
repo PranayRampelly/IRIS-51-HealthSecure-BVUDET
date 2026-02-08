@@ -973,6 +973,143 @@ class RealtimeService {
       }
     });
 
+    // Image message sending
+    socket.on('message:image:send', async (data) => {
+      try {
+        const { receiverId, imageBlob, imageFormat } = data;
+
+        if (!imageBlob || !receiverId) {
+          socket.emit('message:error', { message: 'Missing required fields' });
+          return;
+        }
+
+        // Validate image size (max 10MB)
+        const imageSize = Buffer.byteLength(imageBlob, 'base64');
+        if (imageSize > 10 * 1024 * 1024) {
+          socket.emit('message:error', { message: 'Image file size exceeds 10MB' });
+          return;
+        }
+
+        // Import required modules
+        const Message = (await import('../models/Message.js')).default;
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+        const crypto = await import('crypto');
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = path.join(__dirname, '../../uploads/messages/images');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        // Generate unique filename
+        const fileExtension = imageFormat || 'png';
+        const filename = `${crypto.randomUUID()}.${fileExtension}`;
+        const filepath = path.join(uploadsDir, filename);
+
+        // Convert base64 to buffer and save file
+        const imageBuffer = Buffer.from(imageBlob, 'base64');
+        fs.writeFileSync(filepath, imageBuffer);
+
+        // Create message in database
+        const message = await Message.create({
+          sender: socket.user._id,
+          receiver: receiverId,
+          messageType: 'image',
+          fileUrl: `/uploads/messages/images/${filename}`,
+          fileSize: imageSize,
+          fileFormat: fileExtension
+        });
+
+        await message.populate('sender receiver', 'firstName lastName email role avatar');
+
+        // Send to receiver
+        this.io.to(`user:${receiverId}`).emit('message:new', message);
+
+        // Confirm to sender
+        socket.emit('message:sent', message);
+
+        console.log(`Image message sent from ${socket.user._id} to ${receiverId}`);
+
+      } catch (error) {
+        console.error('Error sending image message:', error);
+        socket.emit('message:error', { message: 'Failed to send image message', error: error.message });
+      }
+    });
+
+    // Document message sending
+    socket.on('message:document:send', async (data) => {
+      try {
+        const { receiverId, docBlob, docName, docFormat } = data;
+
+        if (!docBlob || !receiverId || !docName) {
+          socket.emit('message:error', { message: 'Missing required fields' });
+          return;
+        }
+
+        // Validate document size (max 20MB)
+        const docSize = Buffer.byteLength(docBlob, 'base64');
+        if (docSize > 20 * 1024 * 1024) {
+          socket.emit('message:error', { message: 'Document file size exceeds 20MB' });
+          return;
+        }
+
+        // Import required modules
+        const Message = (await import('../models/Message.js')).default;
+        const fs = await import('fs');
+        const path = await import('path');
+        const { fileURLToPath } = await import('url');
+        const crypto = await import('crypto');
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = path.join(__dirname, '../../uploads/messages/documents');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        // Generate unique filename to avoid collisions, but keep original name info in DB
+        const fileExtension = docFormat || path.extname(docName).replace('.', '') || 'pdf';
+        const filename = `${crypto.randomUUID()}.${fileExtension}`;
+        const filepath = path.join(uploadsDir, filename);
+
+        // Convert base64 to buffer and save file
+        const docBuffer = Buffer.from(docBlob, 'base64');
+        fs.writeFileSync(filepath, docBuffer);
+
+        // Create message in database
+        const message = await Message.create({
+          sender: socket.user._id,
+          receiver: receiverId,
+          messageType: 'document',
+          fileUrl: `/uploads/messages/documents/${filename}`,
+          fileName: docName,
+          fileSize: docSize,
+          fileFormat: fileExtension
+        });
+
+        await message.populate('sender receiver', 'firstName lastName email role avatar');
+
+        // Send to receiver
+        this.io.to(`user:${receiverId}`).emit('message:new', message);
+
+        // Confirm to sender
+        socket.emit('message:sent', message);
+
+        console.log(`Document message sent from ${socket.user._id} to ${receiverId}`);
+
+      } catch (error) {
+        console.error('Error sending document message:', error);
+        socket.emit('message:error', { message: 'Failed to send document message', error: error.message });
+      }
+    });
+
     // Mark message as read
     socket.on('message:read', async (data) => {
       try {

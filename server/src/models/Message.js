@@ -15,7 +15,7 @@ const messageSchema = new mongoose.Schema({
     },
     messageType: {
         type: String,
-        enum: ['text', 'voice'],
+        enum: ['text', 'voice', 'image', 'document'],
         required: true,
         default: 'text'
     },
@@ -49,6 +49,31 @@ const messageSchema = new mongoose.Schema({
         type: Number, // File size in bytes
         required: function () {
             return this.messageType === 'voice';
+        }
+    },
+    // Generic file fields for image and document
+    fileUrl: {
+        type: String,
+        required: function () {
+            return ['image', 'document'].includes(this.messageType);
+        }
+    },
+    fileName: {
+        type: String,
+        required: function () {
+            return this.messageType === 'document';
+        }
+    },
+    fileSize: {
+        type: Number, // File size in bytes
+        required: function () {
+            return ['image', 'document'].includes(this.messageType);
+        }
+    },
+    fileFormat: {
+        type: String,
+        required: function () {
+            return ['image', 'document'].includes(this.messageType);
         }
     },
     // Read status

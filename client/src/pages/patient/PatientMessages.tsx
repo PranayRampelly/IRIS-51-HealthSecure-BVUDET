@@ -35,11 +35,15 @@ interface Message {
     role: string;
     avatar?: string;
   };
-  messageType: 'text' | 'voice';
+  messageType: 'text' | 'voice' | 'image' | 'document';
   content?: string;
   audioUrl?: string;
   audioDuration?: number;
   audioFormat?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileFormat?: string;
   read: boolean;
   readAt?: Date;
   createdAt: Date;
@@ -76,6 +80,8 @@ const PatientMessages: React.FC = () => {
     isConnected,
     sendTextMessage,
     sendVoiceMessage,
+    sendImageMessage,
+    sendDocumentMessage,
     markMessageAsRead,
     onNewMessage,
     onVoiceMessage,
@@ -248,6 +254,66 @@ const PatientMessages: React.FC = () => {
     } catch (err) {
       console.error('Error sending voice message:', err);
       setError('Failed to send voice message');
+    }
+  };
+
+  const handleSendImageMessage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedContact) {
+      try {
+        const format = file.type.split('/')[1] || 'png';
+        await sendImageMessage(selectedContact, file, format);
+        setTimeout(() => loadConversations(), 500);
+      } catch (err) {
+        console.error('Error sending image:', err);
+        setError('Failed to send image');
+      }
+    }
+  };
+
+  const handleSendDocumentMessage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedContact) {
+      try {
+        const format = file.name.split('.').pop() || 'pdf';
+        await sendDocumentMessage(selectedContact, file, file.name, format);
+        setTimeout(() => loadConversations(), 500);
+      } catch (err) {
+        console.error('Error sending document:', err);
+        setError('Failed to send document');
+      }
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Create a temporary video element to show preview or just capture
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
+
+      // Stop stream
+      stream.getTracks().forEach(track => track.stop());
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (blob && selectedContact) {
+          await sendImageMessage(selectedContact, blob, 'png');
+          setTimeout(() => loadConversations(), 500);
+        }
+      }, 'image/png');
+
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError('Could not access camera. Please check permissions.');
     }
   };
 
@@ -461,10 +527,54 @@ const PatientMessages: React.FC = () => {
                                   </div>
                                   <p className="text-sm">{message.content}</p>
                                 </div>
+                              ) : message.messageType === 'image' ? (
+                                <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'bg-health-aqua/10' : 'bg-gray-100'} p-2 rounded-lg`}>
+                                  <img
+                                    src={`${API_URL}${message.fileUrl}`}
+                                    alt="Message attachment"
+                                    className="rounded-md max-h-64 object-contain cursor-pointer"
+                                    onClick={() => window.open(`${API_URL}${message.fileUrl}`, '_blank')}
+                                  />
+                                  <div className="flex items-center justify-between mt-1 px-1">
+                                    <span className="text-[10px] text-health-blue-gray opacity-75">{formatTimestamp(message.createdAt)}</span>
+                                    <a
+                                      href={`${API_URL}${message.fileUrl}`}
+                                      download
+                                      className="text-[10px] text-health-aqua hover:underline"
+                                    >
+                                      Download
+                                    </a>
+                                  </div>
+                                </div>
+                              ) : message.messageType === 'document' ? (
+                                <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'bg-health-aqua/20' : 'bg-gray-100'} p-3 rounded-lg`}>
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <div className="bg-white p-2 rounded shadow-sm">
+                                      <FileText className="w-6 h-6 text-health-aqua" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{message.fileName}</p>
+                                      <p className="text-[10px] text-health-blue-gray opacity-75">
+                                        {(message.fileSize! / 1024).toFixed(1)} KB • {message.fileFormat?.toUpperCase()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-health-blue-gray opacity-75">{formatTimestamp(message.createdAt)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-health-aqua text-xs hover:bg-white/50"
+                                      onClick={() => window.open(`${API_URL}${message.fileUrl}`, '_blank')}
+                                    >
+                                      Open
+                                    </Button>
+                                  </div>
+                                </div>
                               ) : (
                                 <div className="max-w-xs lg:max-w-md">
                                   <VoiceMessagePlayer
-                                    audioUrl={message.audioUrl}
+                                    audioUrl={message.audioUrl!}
                                     duration={message.audioDuration || 0}
                                     sender={message.sender}
                                     timestamp={message.createdAt}
@@ -494,19 +604,66 @@ const PatientMessages: React.FC = () => {
                     {!showVoiceRecorder && (
                       <div className="border-t p-4">
                         <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowVoiceRecorder(true)}
-                          >
-                            <Mic className="w-4 h-4" />
-                          </Button>
+                          <input
+                            type="file"
+                            id="image-upload"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleSendImageMessage}
+                          />
+                          <input
+                            type="file"
+                            id="doc-upload"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                            className="hidden"
+                            onChange={handleSendDocumentMessage}
+                          />
+
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-health-blue-gray hover:text-health-aqua hover:bg-health-aqua/10"
+                              onClick={() => document.getElementById('image-upload')?.click()}
+                              title="Send Image"
+                            >
+                              <Image className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-health-blue-gray hover:text-health-aqua hover:bg-health-aqua/10"
+                              onClick={() => document.getElementById('doc-upload')?.click()}
+                              title="Send Document"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-health-blue-gray hover:text-health-aqua hover:bg-health-aqua/10"
+                              onClick={handleCameraCapture}
+                              title="Capture Photo"
+                            >
+                              <Video className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-health-blue-gray hover:text-health-aqua hover:bg-health-aqua/10"
+                              onClick={() => setShowVoiceRecorder(true)}
+                              title="Record Voice"
+                            >
+                              <Mic className="w-4 h-4" />
+                            </Button>
+                          </div>
+
                           <div className="flex-1">
                             <Textarea
                               placeholder="Type your message..."
                               value={messageText}
                               onChange={(e) => setMessageText(e.target.value)}
-                              className="min-h-[40px] max-h-[120px] resize-none"
+                              className="min-h-[40px] max-h-[120px] resize-none py-2"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                   e.preventDefault();
@@ -518,7 +675,7 @@ const PatientMessages: React.FC = () => {
                           <Button
                             onClick={handleSendTextMessage}
                             disabled={!messageText.trim()}
-                            size="sm"
+                            className="bg-health-aqua hover:bg-health-teal text-white rounded-full w-10 h-10 p-0"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
