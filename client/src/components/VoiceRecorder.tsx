@@ -67,8 +67,13 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSend, onCancel }
         if (!audioBlob) return;
 
         // Determine audio format from blob type
-        const format = audioBlob.type.includes('webm') ? 'webm' :
-            audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
+        let format = 'webm';
+        if (audioBlob.type.includes('webm')) format = 'webm';
+        else if (audioBlob.type.includes('ogg')) format = 'ogg';
+        else if (audioBlob.type.includes('mp4')) format = 'mp4';
+        else if (audioBlob.type.includes('aac')) format = 'aac';
+        else if (audioBlob.type.includes('mpeg')) format = 'mp3';
+        else if (audioBlob.type.includes('wav')) format = 'wav';
 
         onSend(audioBlob, recordingTime, format);
         resetRecording();

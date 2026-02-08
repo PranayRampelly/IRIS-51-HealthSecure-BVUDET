@@ -198,8 +198,8 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrc: ["'self'", "'unsafe-inline'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "http://localhost:5173"],
-    mediaSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "blob:", "data:"],
+    connectSrc: ["'self'", "wss:", "https:", "http://localhost:5000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081"],
+    mediaSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:8080", "http://localhost:8081", "blob:", "data:"],
   }
 }));
 
@@ -226,10 +226,14 @@ if (process.env.NODE_ENV === 'development') {
 // 1. Static files (Must be BEFORE cache control to allow Range requests for audio/video)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   setHeaders: (res, path) => {
-    // Explicitly set audio MIME type for recordings
-    if (path.endsWith('.webm')) {
-      res.set('Content-Type', 'audio/webm');
-    }
+    // Set accurate Content-Type based on extension for recordings
+    if (path.endsWith('.webm')) res.set('Content-Type', 'audio/webm');
+    else if (path.endsWith('.ogg')) res.set('Content-Type', 'audio/ogg');
+    else if (path.endsWith('.mp4')) res.set('Content-Type', 'audio/mp4');
+    else if (path.endsWith('.aac')) res.set('Content-Type', 'audio/aac');
+    else if (path.endsWith('.mp3')) res.set('Content-Type', 'audio/mpeg');
+    else if (path.endsWith('.wav')) res.set('Content-Type', 'audio/wav');
+
     // Allow range requests
     res.set('Accept-Ranges', 'bytes');
     // Allow CORS for static files
