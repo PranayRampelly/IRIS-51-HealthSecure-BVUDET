@@ -12,7 +12,9 @@ import {
   listEmergencyContacts,
   addEmergencyContact,
   updateEmergencyContact,
-  deleteEmergencyContact
+  deleteEmergencyContact,
+  getPatientHealthAnalytics,
+  addPatientVitalSigns
 } from '../controllers/patientController.js';
 
 const router = express.Router();
@@ -24,6 +26,8 @@ router.get('/profile/status', auth, requirePatient, checkProfileStatus);
 
 // Dashboard data (patient only)
 router.get('/dashboard', auth, requirePatient, getPatientDashboard);
+router.get('/analytics', auth, requirePatient, getPatientHealthAnalytics);
+router.post('/vitals', auth, requirePatient, addPatientVitalSigns);
 
 // Pending proof-requests count for patient (compat alias)
 router.get('/proof-requests/pending-count', auth, requirePatient, async (req, res) => {

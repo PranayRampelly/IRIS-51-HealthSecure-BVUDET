@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 export interface InsuranceApplication {
   _id: string;
@@ -91,7 +91,7 @@ class InsuranceApplicationService {
   async getAvailablePolicies() {
     try {
       console.log('Calling API for available policies...');
-      
+
       // Use relative URL so it works in all envs (Vite proxy → backend on 5000)
       // Add cache-busting parameter to force fresh request
       const timestamp = new Date().getTime();
@@ -184,7 +184,7 @@ class InsuranceApplicationService {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('documentType', documentType);
-      
+
       const response = await apiService.post(`/insurance/applications/applications/${id}/documents`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -277,7 +277,7 @@ class InsuranceApplicationService {
   // Export applications
   async exportApplications(filters: ApplicationFilters = {}) {
     try {
-      const response = await apiService.get('/insurance/applications/applications/export', { 
+      const response = await apiService.get('/insurance/applications/applications/export', {
         params: { ...filters, export: true },
         responseType: 'blob'
       });

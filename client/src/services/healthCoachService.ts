@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 export interface Symptom {
   name: string;
@@ -172,7 +172,7 @@ class HealthCoachService {
   // Helper method to categorize symptoms
   private categorizeSymptom(symptom: string): Symptom['category'] {
     const symptomLower = symptom.toLowerCase();
-    
+
     if (['fever', 'fatigue', 'chills', 'weight loss', 'night sweats', 'loss of appetite', 'swelling'].includes(symptomLower)) {
       return 'general';
     } else if (['cough', 'difficulty breathing', 'sore throat', 'runny nose', 'chest pain', 'shortness of breath', 'wheezing', 'sneezing', 'nasal congestion'].includes(symptomLower)) {
@@ -244,7 +244,7 @@ class HealthCoachService {
       'Food Poisoning': 'Illness caused by consuming contaminated food.',
       'Appendicitis': 'Inflammation of the appendix requiring surgical intervention.'
     };
-    
+
     return descriptions[condition] || 'A medical condition requiring professional evaluation.';
   }
 

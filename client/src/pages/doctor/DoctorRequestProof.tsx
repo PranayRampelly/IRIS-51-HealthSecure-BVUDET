@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Shield, User, Calendar as CalendarIcon, Clock, Send, Plus, Eye, Filter, Search } from 'lucide-react';
+import { Shield, User, Calendar as CalendarIcon, Clock, Send, Plus, Eye, Filter, Search, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createProofRequest, getDoctorProofRequests } from '@/services/proofRequestService';
+import api from '@/services/api';
 
 const DoctorRequestProof = () => {
   // State for form fields
@@ -28,6 +29,9 @@ const DoctorRequestProof = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [file, setFile] = useState<File | null>(null);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [searchingPatient, setSearchingPatient] = useState(false);
+  const [foundPatient, setFoundPatient] = useState<any>(null);
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
 
   // Mock stats and requests
   const stats = [
@@ -61,6 +65,32 @@ const DoctorRequestProof = () => {
     }
     fetchRecentRequests();
   }, []);
+
+  const handleSearchPatient = async () => {
+    if (!patientSearchQuery.trim()) {
+      toast.error('Please enter a patient ID or email');
+      return;
+    }
+
+    try {
+      setSearchingPatient(true);
+      setFoundPatient(null);
+      const response = await api.searchDoctorPatient(patientSearchQuery);
+
+      if (response.success && response.found) {
+        setFoundPatient(response.patient);
+        setPatientId(response.patient._id);
+        toast.success(`Found patient: ${response.patient.firstName} ${response.patient.lastName}`);
+      } else {
+        toast.error(response.message || 'Patient not found in your records');
+      }
+    } catch (error: any) {
+      console.error('Error searching patient:', error);
+      toast.error(error.message || 'Failed to search for patient');
+    } finally {
+      setSearchingPatient(false);
+    }
+  };
 
   const handleDataFieldChange = (field: string, checked: boolean) => {
     if (checked) {
@@ -124,8 +154,8 @@ const DoctorRequestProof = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-montserrat font-bold text-health-teal">Request Proof</h1>
+        <div>
+          <h1 className="text-3xl font-montserrat font-bold text-health-teal">Request Proof</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-health-charcoal">Request zero-knowledge proofs from patients for specific data verification</span>
             <span className="flex items-center ml-2 text-xs text-health-success font-semibold"><span className="w-2 h-2 rounded-full bg-health-success mr-1"></span>Live</span>
@@ -166,17 +196,43 @@ const DoctorRequestProof = () => {
           </CardHeader>
           <CardContent className="space-y-5">
             <div>
-              <Label htmlFor="patientId">Patient ID or Email</Label>
-              <div className="relative mt-1">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-health-blue-gray w-4 h-4" />
-                <Input
-                  id="patientId"
-                  placeholder="Enter patient ID or email address"
-                  value={patientId}
-                  onChange={(e) => setPatientId(e.target.value)}
-                  className="pl-10"
-                />
+              <Label htmlFor="patientSearch">Search Patient</Label>
+              <div className="flex gap-2 mt-1">
+                <div className="relative flex-1">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-health-blue-gray w-4 h-4" />
+                  <Input
+                    id="patientSearch"
+                    placeholder="Enter patient ID or email address"
+                    value={patientSearchQuery}
+                    onChange={(e) => setPatientSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearchPatient()}
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  onClick={handleSearchPatient}
+                  disabled={searchingPatient || !patientSearchQuery.trim()}
+                  variant="outline"
+                >
+                  {searchingPatient ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
               </div>
+
+              {/* Patient Search Result */}
+              {foundPatient && (
+                <div className="mt-2 p-3 border rounded-lg bg-green-50 border-green-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-900">
+                        {foundPatient.firstName} {foundPatient.lastName}
+                      </p>
+                      <p className="text-sm text-green-700">{foundPatient.email}</p>
+                      <p className="text-xs text-green-600">Total Appointments: {foundPatient.totalAppointments}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -273,7 +329,7 @@ const DoctorRequestProof = () => {
               <Input id="file" type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
             </div>
 
-            <Button 
+            <Button
               onClick={handleSubmitRequest}
               className="w-full bg-health-teal hover:bg-health-teal/90 text-white mt-2"
               disabled={!patientId || !(purpose === 'other' ? customPurpose : purpose) || dataFields.length === 0}
@@ -333,11 +389,10 @@ const DoctorRequestProof = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                          request.status === 'Approved' ? 'bg-health-success text-white' :
-                          request.status === 'Pending' ? 'bg-health-warning text-white' :
-                          'bg-health-danger text-white'
-                        }`}>
+                        <span className={`inline-block px-2 py-1 text-xs rounded-full ${request.status === 'Approved' ? 'bg-health-success text-white' :
+                            request.status === 'Pending' ? 'bg-health-warning text-white' :
+                              'bg-health-danger text-white'
+                          }`}>
                           {request.status}
                         </span>
                         <Button size="icon" variant="outline"><Eye className="w-4 h-4" /></Button>

@@ -100,7 +100,7 @@ const navigationMap: Record<string, NavItem[]> = {
     { name: 'Smart Features', href: '/patient/smart-features', icon: Zap },
     { name: 'AI Health Assistant', href: '/patient/ai-assistant', icon: Brain },
     { name: 'Health Insights', href: '/patient/health-insights', icon: Target },
-    { name: 'Health Tracking', href: '/patient/health-tracking', icon: Heart },
+    { name: 'Chronic Disease Tracker', href: '/patient/analytics', icon: Activity },
     { name: 'Smart Notifications', href: '/patient/notifications', icon: Bell },
 
     // Existing Features
@@ -266,7 +266,7 @@ const patientNavigationSections: NavSection[] = [
       { name: 'Smart Features', href: '/patient/smart-features', icon: Zap },
       { name: 'AI Health Assistant', href: '/patient/ai-assistant', icon: Brain },
       { name: 'Health Insights', href: '/patient/health-insights', icon: Target },
-      { name: 'Health Tracking', href: '/patient/health-tracking', icon: Heart },
+      { name: 'Chronic Disease Tracker', href: '/patient/analytics', icon: Activity },
       { name: 'Smart Notifications', href: '/patient/notifications', icon: Bell },
     ]
   },
@@ -298,6 +298,7 @@ const doctorNavigationSections: NavSection[] = [
       { name: 'My Patients', href: '/doctor/patients', icon: Users },
       { name: 'Patient Search', href: '/doctor/patient-search', icon: Search },
       { name: 'Patient Records', href: '/doctor/patient-records', icon: FileText },
+      { name: 'Chronic Disease Tracker', href: '/doctor/patient-analytics', icon: Activity },
       { name: 'Patient Analytics', href: '/doctor/patient-analytics', icon: TrendingUp },
     ]
   },
@@ -697,8 +698,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -764,8 +765,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -831,8 +832,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -895,8 +896,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                               key={item.name}
                               to={item.href}
                               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                  ? 'bg-health-aqua text-white'
-                                  : 'text-white/80 hover:bg-health-aqua/20'
+                                ? 'bg-health-aqua text-white'
+                                : 'text-white/80 hover:bg-health-aqua/20'
                                 }`}
                             >
                               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -932,8 +933,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
                     key={item.name}
                     to={item.href}
                     className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                        ? 'bg-health-aqua text-white'
-                        : 'text-white hover:bg-health-aqua/20'
+                      ? 'bg-health-aqua text-white'
+                      : 'text-white hover:bg-health-aqua/20'
                       }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />

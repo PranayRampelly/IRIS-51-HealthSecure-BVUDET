@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 // Types
 export interface ProofValidation {
@@ -251,7 +251,7 @@ class ProofValidationService {
 
   async exportProofs(options: { format: string; status?: string }) {
     try {
-      const response = await apiService.get('/proof-validation/export', { 
+      const response = await apiService.get('/proof-validation/export', {
         params: options,
         responseType: 'blob'
       });
@@ -374,14 +374,14 @@ class ProofValidationService {
   }
 
   getBlockchainIcon(verified: boolean): { icon: string; color: string } {
-    return verified 
+    return verified
       ? { icon: '🔗', color: 'text-health-success' }
       : { icon: '⛓️', color: 'text-health-danger' };
   }
 
   getRecommendations(analysis: ProofValidation['aiAnalysis']): string[] {
     if (!analysis) return [];
-    
+
     const recommendations = [];
     if (analysis.documentAuthenticity.overallAuthenticity < 70) {
       recommendations.push('Document authenticity requires manual verification');
@@ -392,13 +392,13 @@ class ProofValidationService {
     if (analysis.riskAssessment.overallRisk > 70) {
       recommendations.push('High risk detected - requires immediate attention');
     }
-    
+
     return recommendations;
   }
 
   getRiskFactors(analysis: ProofValidation['aiAnalysis']): string[] {
     if (!analysis) return [];
-    
+
     const factors = [];
     if (analysis.documentAuthenticity.signatureAnalysis < 50) {
       factors.push('Signature analysis failed');
@@ -412,7 +412,7 @@ class ProofValidationService {
     if (analysis.riskAssessment.fraudDetection > 80) {
       factors.push('High fraud risk detected');
     }
-    
+
     return factors;
   }
 }
