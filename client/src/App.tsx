@@ -73,11 +73,8 @@ import HospitalDiscovery from "./pages/patient/HospitalDiscovery";
 import RequestAdmission from "./pages/patient/RequestAdmission";
 import AdmissionRequests from "./pages/patient/AdmissionRequests";
 import PatientAIAssistant from "./pages/patient/PatientAIAssistant";
-<<<<<<< HEAD
 import PatientMessages from "./pages/patient/PatientMessages";
-=======
 import PatientHealthAnalytics from "./pages/patient/PatientHealthAnalytics";
->>>>>>> d41f4b50303253f3922bf364d1e62a5a9e4e000f
 import HospitalAdmissionRequests from "./pages/hospital/AdmissionRequests";
 
 // Doctor Dashboard Pages
