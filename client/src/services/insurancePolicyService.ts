@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 export interface PolicyDocument {
   _id?: string;
@@ -303,7 +303,7 @@ class InsurancePolicyService {
       if (documents.length > 0) {
         formData.append('file', documents[0]);
       }
-      
+
       const response = await apiService.post(`/insurance/policies/${policyId}/documents`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

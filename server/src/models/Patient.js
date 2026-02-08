@@ -4,7 +4,7 @@ const patientSchema = new mongoose.Schema({
   // Basic Information
   patientId: {
     type: String,
-    required: true,
+    required: false, // Generated automatically in pre-save hook
     unique: true
   },
   firstName: {
@@ -23,7 +23,7 @@ const patientSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
+    enum: ['Male', 'Female', 'Other', 'Prefer not to say'],
     required: true
   },
   bloodType: {
@@ -31,7 +31,7 @@ const patientSchema = new mongoose.Schema({
     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
     default: null
   },
-  
+
   // Contact Information
   phone: {
     type: String,
@@ -49,7 +49,7 @@ const patientSchema = new mongoose.Schema({
     zipCode: String,
     country: String
   },
-  
+
   // Emergency Contacts
   emergencyContacts: [{
     name: String,
@@ -61,11 +61,49 @@ const patientSchema = new mongoose.Schema({
       default: false
     }
   }],
-  
+
   // Medical Information
   primaryDiagnosis: String,
   secondaryDiagnosis: [String],
   allergies: [String],
+
+  // Chronic Disease Management
+  monitoredConditions: [{
+    condition: {
+      type: String,
+      enum: ['Hypertension', 'Diabetes Type 1', 'Diabetes Type 2', 'Asthma', 'COPD', 'Heart Disease', 'Chronic Kidney Disease'],
+      required: true
+    },
+    severity: {
+      type: String,
+      enum: ['mild', 'moderate', 'severe', 'critical'],
+      default: 'moderate'
+    },
+    managementGoals: {
+      targetBP: String, // e.g., "< 130/80"
+      targetGlucose: String, // e.g., "70-130 mg/dL"
+      targetWeight: Number,
+      targetHbA1c: Number
+    },
+    lastReviewDate: Date,
+    nextReviewDate: Date
+  }],
+
+  medicationAdherence: [{
+    medicationId: mongoose.Schema.Types.ObjectId,
+    medicationName: String,
+    status: {
+      type: String,
+      enum: ['adherent', 'non-adherent', 'partially-adherent'],
+      default: 'adherent'
+    },
+    notes: String,
+    recordedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
   currentMedications: [{
     medication: String,
     dosage: String,
@@ -77,33 +115,29 @@ const patientSchema = new mongoose.Schema({
       ref: 'User'
     }
   }],
-  
+
   // Hospital Information
   hospital: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   },
   department: {
-    type: String,
-    required: true
+    type: String
   },
   roomNumber: String,
   bedNumber: String,
-  
+
   // Admission Information
   admissionDate: {
-    type: Date,
-    required: true
+    type: Date
   },
   expectedDischargeDate: Date,
   actualDischargeDate: Date,
   admittingDoctor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   },
-  
+
   // Status and Priority
   status: {
     type: String,
@@ -115,7 +149,7 @@ const patientSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   },
-  
+
   // Vital Signs
   vitalSigns: [{
     timestamp: {
@@ -129,12 +163,31 @@ const patientSchema = new mongoose.Schema({
     oxygenSaturation: String,
     weight: String,
     height: String,
+    // Metabolic Metrics
+    bloodGlucose: {
+      value: Number,
+      type: {
+        type: String,
+        enum: ['fasting', 'post-prandial', 'random-check'],
+        default: 'random-check'
+      }
+    },
+    hba1c: Number,
+    // Lipid Panel
+    cholesterol: {
+      total: Number,
+      ldl: Number,
+      hdl: Number,
+      triglycerides: Number
+    },
+    // Respiratory Metrics
+    peakFlow: Number,
     recordedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }
   }],
-  
+
   // Treatment Plan
   treatmentPlan: String,
   procedures: [{
@@ -151,7 +204,7 @@ const patientSchema = new mongoose.Schema({
       default: 'scheduled'
     }
   }],
-  
+
   // Lab Tests and Imaging
   labTests: [{
     testName: String,
@@ -183,7 +236,7 @@ const patientSchema = new mongoose.Schema({
       ref: 'User'
     }
   }],
-  
+
   // Progress Notes
   progressNotes: [{
     date: {
@@ -201,7 +254,7 @@ const patientSchema = new mongoose.Schema({
       default: 'medical'
     }
   }],
-  
+
   // Insurance Information
   insurance: {
     provider: String,
@@ -211,7 +264,7 @@ const patientSchema = new mongoose.Schema({
     deductible: Number,
     copay: Number
   },
-  
+
   // Billing Information
   billing: {
     roomCharges: Number,
@@ -228,7 +281,7 @@ const patientSchema = new mongoose.Schema({
       default: 'pending'
     }
   },
-  
+
   // Discharge Planning
   dischargePlan: {
     dischargeDate: Date,
@@ -253,7 +306,7 @@ const patientSchema = new mongoose.Schema({
     restrictions: [String],
     activities: [String]
   },
-  
+
   // Consent and Legal
   consents: [{
     type: String,
@@ -274,7 +327,7 @@ const patientSchema = new mongoose.Schema({
       default: true
     }
   }],
-  
+
   // Status History
   statusHistory: [{
     status: String,
@@ -288,7 +341,7 @@ const patientSchema = new mongoose.Schema({
     },
     notes: String
   }],
-  
+
   // Audit Information
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -309,7 +362,7 @@ patientSchema.index({ department: 1, status: 1 });
 patientSchema.index({ admittingDoctor: 1, admissionDate: 1 });
 
 // Pre-save middleware
-patientSchema.pre('save', function(next) {
+patientSchema.pre('save', function (next) {
   if (this.isNew) {
     // Generate patient ID
     const date = new Date();
@@ -319,7 +372,7 @@ patientSchema.pre('save', function(next) {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     this.patientId = `PAT-${year}${month}${day}-${random}`;
   }
-  
+
   if (this.isModified('status')) {
     this.statusHistory.push({
       status: this.status,
@@ -331,7 +384,7 @@ patientSchema.pre('save', function(next) {
 });
 
 // Methods
-patientSchema.methods.updateStatus = function(newStatus, updatedBy, notes = '') {
+patientSchema.methods.updateStatus = function (newStatus, updatedBy, notes = '') {
   this.status = newStatus;
   this.updatedBy = updatedBy;
   if (notes) {
@@ -345,7 +398,7 @@ patientSchema.methods.updateStatus = function(newStatus, updatedBy, notes = '') 
   return this.save();
 };
 
-patientSchema.methods.addProgressNote = function(note, writtenBy, category = 'medical') {
+patientSchema.methods.addProgressNote = function (note, writtenBy, category = 'medical') {
   this.progressNotes.push({
     note,
     writtenBy,
@@ -354,7 +407,7 @@ patientSchema.methods.addProgressNote = function(note, writtenBy, category = 'me
   return this.save();
 };
 
-patientSchema.methods.addVitalSigns = function(vitals, recordedBy) {
+patientSchema.methods.addVitalSigns = function (vitals, recordedBy) {
   this.vitalSigns.push({
     ...vitals,
     recordedBy
@@ -362,7 +415,7 @@ patientSchema.methods.addVitalSigns = function(vitals, recordedBy) {
   return this.save();
 };
 
-patientSchema.methods.calculateLengthOfStay = function() {
+patientSchema.methods.calculateLengthOfStay = function () {
   const dischargeDate = this.actualDischargeDate || new Date();
   const admissionDate = this.admissionDate;
   const diffTime = Math.abs(dischargeDate - admissionDate);
@@ -370,26 +423,26 @@ patientSchema.methods.calculateLengthOfStay = function() {
   return diffDays;
 };
 
-patientSchema.methods.calculateTotalCharges = function() {
+patientSchema.methods.calculateTotalCharges = function () {
   const total = (this.billing.roomCharges || 0) +
-                (this.billing.medicationCharges || 0) +
-                (this.billing.procedureCharges || 0) +
-                (this.billing.labCharges || 0) +
-                (this.billing.imagingCharges || 0);
-  
+    (this.billing.medicationCharges || 0) +
+    (this.billing.procedureCharges || 0) +
+    (this.billing.labCharges || 0) +
+    (this.billing.imagingCharges || 0);
+
   this.billing.totalCharges = total;
   this.billing.patientResponsibility = total - (this.billing.insuranceCoverage || 0);
-  
+
   return this.save();
 };
 
 // Virtual for patient full name
-patientSchema.virtual('fullName').get(function() {
+patientSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Virtual for age
-patientSchema.virtual('age').get(function() {
+patientSchema.virtual('age').get(function () {
   if (!this.dateOfBirth) return null;
   const today = new Date();
   const birthDate = new Date(this.dateOfBirth);

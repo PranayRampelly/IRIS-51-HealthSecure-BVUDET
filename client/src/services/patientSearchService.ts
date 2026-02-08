@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 export interface PatientSearchResult {
   _id: string;
@@ -56,7 +56,7 @@ class PatientSearchService {
   async searchPatients(filters: PatientSearchFilters = {}): Promise<PatientSearchResponse> {
     try {
       const params = new URLSearchParams();
-      
+
       if (filters.searchTerm) params.append('search', filters.searchTerm);
       if (filters.policyType) params.append('policyType', filters.policyType);
       if (filters.status) params.append('status', filters.status);

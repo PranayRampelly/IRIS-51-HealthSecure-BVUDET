@@ -141,89 +141,85 @@ doctorAvailabilitySchema.index({ isOnline: 1 });
 doctorAvailabilitySchema.index({ status: 1 });
 
 // Pre-save middleware to calculate analytics
-doctorAvailabilitySchema.pre('save', function(next) {
+doctorAvailabilitySchema.pre('save', function (next) {
   this.calculateAnalytics();
   next();
 });
 
 // Instance methods
-doctorAvailabilitySchema.methods.calculateAnalytics = function() {
+doctorAvailabilitySchema.methods.calculateAnalytics = function () {
   const workingDays = this.workingDays.filter(day => day.isWorking);
   this.analytics.weeklyAvailability = workingDays.length;
-  
+
   if (workingDays.length > 0) {
     // Use the first working day's times for calculation, or fall back to defaults
     const firstWorkingDay = workingDays.find(day => day.isWorking) || workingDays[0];
     const startTime = new Date(`2000-01-01T${firstWorkingDay.startTime}`);
     const endTime = new Date(`2000-01-01T${firstWorkingDay.endTime}`);
     const workingHours = (endTime - startTime) / (1000 * 60 * 60);
-    
+
     // Calculate total break time for the day
     const totalBreakTime = firstWorkingDay.breaks.reduce((total, break_) => {
       const breakStart = new Date(`2000-01-01T${break_.startTime}`);
       const breakEnd = new Date(`2000-01-01T${break_.endTime}`);
       return total + (breakEnd - breakStart) / (1000 * 60 * 60);
     }, 0);
-    
+
     const availableHours = workingHours - totalBreakTime;
     this.analytics.totalWorkingHours = availableHours * workingDays.length;
     this.analytics.totalSlotsPerDay = Math.floor(availableHours * 60 / this.appointmentDuration);
   }
 };
 
-doctorAvailabilitySchema.methods.updateCurrentStatus = function() {
-  const now = new Date();
-  const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  
-  const todaySchedule = this.workingDays.find(day => day.day === currentDay);
-  this.currentStatus.isWorkingToday = todaySchedule ? todaySchedule.isWorking : false;
-  
-  if (this.currentStatus.isWorkingToday) {
-    const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-    this.currentStatus.isWithinWorkingHours = 
-      currentTime >= todaySchedule.startTime && currentTime <= todaySchedule.endTime;
-  } else {
-    this.currentStatus.isWithinWorkingHours = false;
-  }
-  
-  this.currentStatus.lastUpdated = now;
-  
-  // Update overall status
-  if (this.isOnline && this.currentStatus.isWorkingToday && this.currentStatus.isWithinWorkingHours) {
+doctorAvailabilitySchema.methods.updateCurrentStatus = function () {
+  // Changed: Now uses schedule-based availability instead of time-based
+  // Doctor is available if they have working days configured, regardless of current time
+
+  const workingDays = this.workingDays.filter(day => day.isWorking);
+  const hasWorkingDays = workingDays.length > 0;
+  const hasWorkingHours = this.defaultStartTime && this.defaultEndTime;
+
+  // Set current status based on schedule configuration
+  this.currentStatus.isWorkingToday = hasWorkingDays; // Has at least one working day
+  this.currentStatus.isWithinWorkingHours = hasWorkingHours; // Has working hours configured
+  this.currentStatus.lastUpdated = new Date();
+
+  // Update overall status based on schedule and online status
+  if (this.isOnline && hasWorkingDays && hasWorkingHours) {
     this.status = 'available';
-  } else if (this.isOnline && this.currentStatus.isWorkingToday) {
-    this.status = 'away';
+  } else if (this.isOnline && hasWorkingDays) {
+    this.status = 'away'; // Online but missing working hours
   } else {
     this.status = 'unavailable';
   }
 };
 
-doctorAvailabilitySchema.methods.getAvailableSlots = function(date) {
+doctorAvailabilitySchema.methods.getAvailableSlots = function (date) {
   const targetDate = new Date(date);
   const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  
+
   const daySchedule = this.workingDays.find(day => day.day === dayName);
   if (!daySchedule || !daySchedule.isWorking) {
     return [];
   }
-  
+
   const slots = [];
   const startTime = new Date(`2000-01-01T${daySchedule.startTime}`);
   const endTime = new Date(`2000-01-01T${daySchedule.endTime}`);
-  
+
   let currentTime = new Date(startTime);
-  
+
   while (currentTime < endTime) {
     const slotStart = new Date(currentTime);
     const slotEnd = new Date(currentTime.getTime() + this.appointmentDuration * 60000);
-    
+
     // Check if slot conflicts with any breaks
     const conflictsWithBreak = daySchedule.breaks.some(break_ => {
       const breakStart = new Date(`2000-01-01T${break_.startTime}`);
       const breakEnd = new Date(`2000-01-01T${break_.endTime}`);
       return slotStart < breakEnd && slotEnd > breakStart;
     });
-    
+
     if (!conflictsWithBreak) {
       slots.push({
         startTime: slotStart.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
@@ -232,23 +228,23 @@ doctorAvailabilitySchema.methods.getAvailableSlots = function(date) {
         isAvailable: true
       });
     }
-    
+
     currentTime = new Date(currentTime.getTime() + this.appointmentDuration * 60000);
   }
-  
+
   return slots;
 };
 
 // Static methods
-doctorAvailabilitySchema.statics.findByDoctorId = function(doctorId) {
+doctorAvailabilitySchema.statics.findByDoctorId = function (doctorId) {
   return this.findOne({ doctorId }).populate('doctorId', 'name email role');
 };
 
-doctorAvailabilitySchema.statics.updateOnlineStatus = function(doctorId, isOnline) {
+doctorAvailabilitySchema.statics.updateOnlineStatus = function (doctorId, isOnline) {
   return this.findOneAndUpdate(
     { doctorId },
-    { 
-      isOnline, 
+    {
+      isOnline,
       lastOnlineAt: new Date(),
       status: isOnline ? 'available' : 'unavailable'
     },

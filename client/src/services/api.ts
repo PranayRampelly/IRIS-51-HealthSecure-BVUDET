@@ -1,5 +1,7 @@
 interface RequestConfig {
   headers?: Record<string, string>;
+  params?: Record<string, any>;
+  responseType?: 'json' | 'blob' | 'text';
 }
 
 class ApiService {
@@ -18,14 +20,28 @@ class ApiService {
   // Generic HTTP methods
   async get(url: string, config: RequestConfig = {}): Promise<any> {
     try {
-      const response = await fetch(`${this.baseURL}${url}`, {
+      let fullUrl = `${this.baseURL}${url}`;
+      if (config.params) {
+        const queryParams = new URLSearchParams();
+        Object.entries(config.params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            queryParams.append(key, String(value));
+          }
+        });
+        const queryString = queryParams.toString();
+        if (queryString) {
+          fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString;
+        }
+      }
+
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
           ...this.getAuthHeaders(),
           ...config.headers
         }
       });
-      return this.handleResponse(response);
+      return this.handleResponse(response, config.responseType);
     } catch (error: any) {
       // Handle network errors
       if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION_REFUSED')) {
@@ -44,7 +60,7 @@ class ApiService {
       },
       body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined
     });
-    return this.handleResponse(response);
+    return this.handleResponse(response, config.responseType);
   }
 
   async put(url: string, data: any = null, config: RequestConfig = {}): Promise<any> {
@@ -56,7 +72,7 @@ class ApiService {
       },
       body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined
     });
-    return this.handleResponse(response);
+    return this.handleResponse(response, config.responseType);
   }
 
   async patch(url: string, data: any = null, config: RequestConfig = {}): Promise<any> {
@@ -79,7 +95,7 @@ class ApiService {
         ...config.headers
       }
     });
-    return this.handleResponse(response);
+    return this.handleResponse(response, config.responseType);
   }
 
   // Helper method to get auth headers
@@ -92,10 +108,15 @@ class ApiService {
   }
 
   // Helper method to handle API responses
-  async handleResponse(response: Response): Promise<any> {
-    const data = await response.json();
-
+  async handleResponse(response: Response, responseType: 'json' | 'blob' | 'text' = 'json'): Promise<any> {
     if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: 'API request failed' };
+      }
+
       if (response.status === 429) {
         // Get retry delay from header or use exponential backoff
         const retryAfter = response.headers.get('Retry-After');
@@ -109,12 +130,18 @@ class ApiService {
 
       // Reset retry delay for non-rate-limit errors
       this.retryDelay = 1000;
-      throw new Error(data.message || 'API request failed');
+      throw new Error(errorData.message || 'API request failed');
     }
 
     // Reset retry delay on success
     this.retryDelay = 1000;
-    return data;
+
+    if (responseType === 'blob') {
+      return response.blob();
+    } else if (responseType === 'text') {
+      return response.text();
+    }
+    return response.json();
   }
 
   // Debounce requests to prevent rate limiting
@@ -945,6 +972,48 @@ class ApiService {
   async getHealthAssessmentStats() {
     const response = await fetch(`${this.baseURL}/health-coach/stats`, {
       headers: this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  // Doctor Patient Search endpoints
+  async getDoctorPatients(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const response = await fetch(`${this.baseURL}/doctor/my-patients?${queryString}`, {
+      headers: this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  async searchDoctorPatient(query: string) {
+    const response = await fetch(`${this.baseURL}/doctor/search-patient?query=${encodeURIComponent(query)}`, {
+      headers: this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  async getPatientHealthAnalytics(patientId: string) {
+    const response = await fetch(`${this.baseURL}/doctor/patients/${patientId}/analytics`, {
+      headers: this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  async getMyHealthAnalytics() {
+    const response = await fetch(`${this.baseURL}/patient/analytics`, {
+      headers: this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  async addMyVitalSigns(vitalsData: any) {
+    const response = await fetch(`${this.baseURL}/patient/vitals`, {
+      method: 'POST',
+      headers: {
+        ...this.getAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(vitalsData)
     });
     return this.handleResponse(response);
   }

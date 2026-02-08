@@ -62,8 +62,8 @@ export const getPatientDetail = async (req, res) => {
       patientId: req.params.id,
       requesterId: req.user._id
     })
-    .sort({ createdAt: -1 })
-    .limit(5);
+      .sort({ createdAt: -1 })
+      .limit(5);
 
     // Get patient's public proofs
     const publicProofs = await Proof.find({
@@ -71,9 +71,9 @@ export const getPatientDetail = async (req, res) => {
       isPublic: true,
       status: 'Active'
     })
-    .select('title proofType statement createdAt')
-    .sort({ createdAt: -1 })
-    .limit(5);
+      .select('title proofType statement createdAt')
+      .sort({ createdAt: -1 })
+      .limit(5);
 
     res.json({
       patient: {
@@ -121,7 +121,7 @@ export const uploadPrescription = async (req, res) => {
 
     // Create health record for the prescription
     const HealthRecord = (await import('../models/HealthRecord.js')).default;
-    
+
     const record = await HealthRecord.create({
       patientId: patient._id,
       doctorId: req.user._id,
@@ -187,7 +187,7 @@ export const getDoctorDashboard = async (req, res) => {
     // Get verified proofs this week
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
+
     const verifiedThisWeek = await ProofRequest.countDocuments({
       requesterId: req.user._id,
       status: 'Approved',
@@ -207,9 +207,9 @@ export const getDoctorDashboard = async (req, res) => {
     const recentRequests = await ProofRequest.find({
       requesterId: req.user._id
     })
-    .populate('patientId', 'firstName lastName email profileImage')
-    .sort({ createdAt: -1 })
-    .limit(5);
+      .populate('patientId', 'firstName lastName email profileImage')
+      .sort({ createdAt: -1 })
+      .limit(5);
 
     // Get a list of patients for the dashboard table (limit 8 for preview)
     const patients = await User.find({ role: 'patient' })
@@ -302,15 +302,15 @@ export const searchPatients = async (req, res) => {
         { email: { $regex: q, $options: 'i' } }
       ]
     })
-    .select('firstName lastName email dateOfBirth')
-    .limit(10);
+      .select('firstName lastName email dateOfBirth')
+      .limit(10);
 
     res.json(patients);
   } catch (error) {
     console.error('Search patients error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Get doctor profile/settings
 // @route   GET /api/doctor/settings
@@ -341,7 +341,7 @@ export const updateDoctorProfile = async (req, res) => {
       bodyKeys: Object.keys(req.body),
       bodyValues: Object.fromEntries(
         Object.entries(req.body).map(([key, value]) => [
-          key, 
+          key,
           typeof value === 'string' && value.length > 100 ? `${value.substring(0, 100)}...` : value
         ])
       ),
@@ -350,16 +350,16 @@ export const updateDoctorProfile = async (req, res) => {
       fileKeys: req.files ? Object.keys(req.files) : [],
       fileField: req.file ? req.file.fieldname : null
     });
-    
+
     const forbidden = ['password', 'email', 'role', 'isEmailVerified', 'isActive', '_id', 'patientId'];
     forbidden.forEach(f => delete req.body[f]);
     let update = { ...req.body };
-    
+
     // Handle profile image upload
     if (req.files) {
       // Check for either avatar or profileImage field
       const uploadedFile = req.files.avatar?.[0] || req.files.profileImage?.[0];
-      
+
       if (uploadedFile) {
         try {
           console.log('📁 File received:', {
@@ -368,13 +368,13 @@ export const updateDoctorProfile = async (req, res) => {
             mimetype: uploadedFile.mimetype,
             size: uploadedFile.size
           });
-          
+
           // Import the uploadToCloudinary function
           const { uploadToCloudinary } = await import('../utils/cloudinary.js');
-          
+
           // Get the current user with profileImage field
           const currentUser = await User.findById(req.user._id).select('profileImage');
-          
+
           // Delete old image if exists
           if (currentUser && currentUser.profileImage && currentUser.profileImage.publicId) {
             const { deleteFromCloudinary } = await import('../utils/cloudinary.js');
@@ -390,13 +390,13 @@ export const updateDoctorProfile = async (req, res) => {
           console.log('☁️ Uploading to Cloudinary...');
           const uploadResult = await uploadToCloudinary(uploadedFile.path, 'user_profiles');
           console.log('✅ Cloudinary upload result:', uploadResult);
-          
+
           update.profileImage = {
             url: uploadResult.secure_url,
             publicId: uploadResult.public_id,
             uploadedAt: new Date()
           };
-          
+
           console.log('✅ Profile image data prepared:', update.profileImage);
         } catch (uploadError) {
           console.error('❌ Profile image upload error:', uploadError);
@@ -414,13 +414,13 @@ export const updateDoctorProfile = async (req, res) => {
           mimetype: req.file.mimetype,
           size: req.file.size
         });
-        
+
         // Import the uploadToCloudinary function
         const { uploadToCloudinary } = await import('../utils/cloudinary.js');
-        
+
         // Get the current user with profileImage field
         const currentUser = await User.findById(req.user._id).select('profileImage');
-        
+
         // Delete old image if exists
         if (currentUser && currentUser.profileImage && currentUser.profileImage.publicId) {
           const { deleteFromCloudinary } = await import('../utils/cloudinary.js');
@@ -436,13 +436,13 @@ export const updateDoctorProfile = async (req, res) => {
         console.log('☁️ Uploading to Cloudinary...');
         const uploadResult = await uploadToCloudinary(req.file.path, 'user_profiles');
         console.log('✅ Cloudinary upload result:', uploadResult);
-        
+
         update.profileImage = {
           url: uploadResult.secure_url,
           publicId: uploadResult.public_id,
           uploadedAt: new Date()
         };
-        
+
         console.log('✅ Profile image data prepared:', update.profileImage);
       } catch (uploadError) {
         console.error('❌ Profile image upload error:', uploadError);
@@ -451,7 +451,7 @@ export const updateDoctorProfile = async (req, res) => {
     } else {
       console.log('ℹ️ No file uploaded in this request');
     }
-    
+
     // Explicitly map all profile fields
     const profileFields = [
       'firstName', 'lastName', 'phone', 'specialty', 'specialization', 'licenseNumber', 'hospital', 'department', 'yearsOfExperience', 'bio'
@@ -461,12 +461,12 @@ export const updateDoctorProfile = async (req, res) => {
         update[field] = req.body[field];
       }
     });
-    
+
     // specialty/specialization mapping
     if (req.body.specialty && !req.body.specialization) {
       update.specialization = req.body.specialty;
     }
-    
+
     // Handle nested objects that might come as JSON strings from FormData
     const nestedFields = [
       'location', 'consultationFees', 'availability', 'specialties', 'languages', 'ratings', 'documents',
@@ -491,7 +491,7 @@ export const updateDoctorProfile = async (req, res) => {
         }
       }
     });
-    
+
     // Parse nested settings if present
     if (req.body.scheduleSettings) {
       try {
@@ -514,32 +514,32 @@ export const updateDoctorProfile = async (req, res) => {
         console.warn('⚠️ Failed to parse privacySettings:', parseError);
       }
     }
-    
+
     console.log('📝 Final update data:', update);
-    
+
     const doctor = await User.findByIdAndUpdate(
       req.user._id,
       update,
       { new: true, runValidators: true }
     ).select('-password');
-    
+
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).json({ message: 'Doctor not found' });
     }
-    
+
     console.log('✅ Doctor profile updated successfully:', {
       id: doctor._id,
       profileImage: doctor.profileImage,
       hasProfileImage: !!doctor.profileImage,
       profileImageType: typeof doctor.profileImage
     });
-    
+
     res.json({ message: 'Profile updated successfully', doctor });
   } catch (error) {
     console.error('❌ Update doctor profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Get nearby doctors (by city/state or lat/lng)
 // @route   GET /api/doctors/nearby
@@ -548,17 +548,17 @@ export const getNearbyDoctors = async (req, res) => {
   try {
     const { city, state, lat, lng, pincode, radius = 5 } = req.query;
     console.log('🔍 Fetching nearby doctors with params:', { city, state, lat, lng, pincode, radius });
-    
+
     let query = { role: 'doctor', isActive: true };
-    
+
     // If coordinates are provided, use geospatial search
     if (lat && lng) {
       const latitude = parseFloat(lat);
       const longitude = parseFloat(lng);
       const radiusKm = parseFloat(radius);
-      
+
       console.log(`📍 Using geospatial search: lat=${latitude}, lng=${longitude}, radius=${radiusKm}km`);
-      
+
       // Find doctors within the specified radius
       const doctors = await User.find({
         role: 'doctor',
@@ -566,17 +566,17 @@ export const getNearbyDoctors = async (req, res) => {
         'location.lat': { $exists: true, $ne: null },
         'location.lng': { $exists: true, $ne: null }
       })
-      .select('-password -emailVerificationToken -emailVerificationExpires -twoFactorSecret -backupCodes -mfaSecret')
-      .lean();
-      
+        .select('-password -emailVerificationToken -emailVerificationExpires -twoFactorSecret -backupCodes -mfaSecret')
+        .lean();
+
       // Calculate distances and filter by radius
       const doctorsWithDistance = doctors
         .map(doctor => {
           if (doctor.location?.lat && doctor.location?.lng) {
             const distance = calculateDistance(
-              latitude, 
-              longitude, 
-              doctor.location.lat, 
+              latitude,
+              longitude,
+              doctor.location.lat,
               doctor.location.lng
             );
             return { ...doctor, distance };
@@ -585,9 +585,9 @@ export const getNearbyDoctors = async (req, res) => {
         })
         .filter(doctor => doctor.distance !== null && doctor.distance <= radiusKm)
         .sort((a, b) => a.distance - b.distance);
-      
+
       console.log(`✅ Found ${doctorsWithDistance.length} doctors within ${radiusKm}km radius`);
-      
+
       // Transform the data
       const transformedDoctors = doctorsWithDistance.map(doctor => ({
         _id: doctor._id,
@@ -619,7 +619,7 @@ export const getNearbyDoctors = async (req, res) => {
         // This ensures real-time availability and prevents double bookings
         availableSlots: [] // Will be populated by frontend when needed
       }));
-      
+
       return res.json({
         success: true,
         count: transformedDoctors.length,
@@ -628,34 +628,34 @@ export const getNearbyDoctors = async (req, res) => {
         searchType: 'geospatial'
       });
     }
-    
+
     // Fallback to city/state/pincode search
     if (city) query['address.city'] = { $regex: city, $options: 'i' };
     if (state) query['address.state'] = { $regex: state, $options: 'i' };
     if (pincode) query['location.pincode'] = pincode;
-    
+
     console.log('🏙️ Using city/state/pincode search with query:', query);
-    
+
     const doctors = await User.find(query)
       .select('-password -emailVerificationToken -emailVerificationExpires -twoFactorSecret -backupCodes -mfaSecret')
       .lean();
-    
-          console.log(`✅ Found ${doctors.length} doctors by city/state/pincode`);
-      
-      // Debug: Log the first doctor's data structure
-      if (doctors.length > 0) {
-        console.log('🔍 First doctor data structure:', {
-          _id: doctors[0]._id,
-          firstName: doctors[0].firstName,
-          consultationFees: doctors[0].consultationFees,
-          hasConsultationFees: !!doctors[0].consultationFees,
-          consultationFeesType: typeof doctors[0].consultationFees,
-          consultationFeesKeys: doctors[0].consultationFees ? Object.keys(doctors[0].consultationFees) : 'N/A'
-        });
-      }
-      
-      // Transform the data similar to getAllDoctors
-      const transformedDoctors = doctors.map(doctor => ({
+
+    console.log(`✅ Found ${doctors.length} doctors by city/state/pincode`);
+
+    // Debug: Log the first doctor's data structure
+    if (doctors.length > 0) {
+      console.log('🔍 First doctor data structure:', {
+        _id: doctors[0]._id,
+        firstName: doctors[0].firstName,
+        consultationFees: doctors[0].consultationFees,
+        hasConsultationFees: !!doctors[0].consultationFees,
+        consultationFeesType: typeof doctors[0].consultationFees,
+        consultationFeesKeys: doctors[0].consultationFees ? Object.keys(doctors[0].consultationFees) : 'N/A'
+      });
+    }
+
+    // Transform the data similar to getAllDoctors
+    const transformedDoctors = doctors.map(doctor => ({
       _id: doctor._id,
       firstName: doctor.firstName,
       lastName: doctor.lastName,
@@ -665,7 +665,7 @@ export const getNearbyDoctors = async (req, res) => {
       experience: doctor.experience || doctor.yearsOfExperience || 0,
       languages: doctor.languages || ['English'],
       ratings: doctor.ratings || { average: 4.5, count: 0 },
-              consultationFees: doctor.consultationFees || { online: 0, inPerson: 0 },
+      consultationFees: doctor.consultationFees || { online: 0, inPerson: 0 },
       location: {
         address: doctor.location?.address || doctor.hospital || 'Address not available',
         lat: doctor.location?.lat || 0,
@@ -681,36 +681,36 @@ export const getNearbyDoctors = async (req, res) => {
       address: doctor.address,
       profileComplete: doctor.profileComplete,
       isActive: doctor.isActive,
-              // Note: availableSlots will be fetched dynamically via /api/slots/:doctorId/:date
-        // This ensures real-time availability and prevents double bookings
-                availableSlots: [] // Will be populated by frontend when needed
-      }));
-      
-      // Debug: Log the transformed consultation fees
-      if (transformedDoctors.length > 0) {
-        console.log('🔍 Transformed consultation fees:', {
-          doctorName: `${transformedDoctors[0].firstName} ${transformedDoctors[0].lastName}`,
-          consultationFees: transformedDoctors[0].consultationFees,
-          hasFees: !!transformedDoctors[0].consultationFees,
-          onlineFee: transformedDoctors[0].consultationFees?.online,
-          inPersonFee: transformedDoctors[0].consultationFees?.inPerson
-        });
-      }
-      
-      res.json({
+      // Note: availableSlots will be fetched dynamically via /api/slots/:doctorId/:date
+      // This ensures real-time availability and prevents double bookings
+      availableSlots: [] // Will be populated by frontend when needed
+    }));
+
+    // Debug: Log the transformed consultation fees
+    if (transformedDoctors.length > 0) {
+      console.log('🔍 Transformed consultation fees:', {
+        doctorName: `${transformedDoctors[0].firstName} ${transformedDoctors[0].lastName}`,
+        consultationFees: transformedDoctors[0].consultationFees,
+        hasFees: !!transformedDoctors[0].consultationFees,
+        onlineFee: transformedDoctors[0].consultationFees?.online,
+        inPersonFee: transformedDoctors[0].consultationFees?.inPerson
+      });
+    }
+
+    res.json({
       success: true,
       count: transformedDoctors.length,
       doctors: transformedDoctors,
       searchParams: { city, state, pincode },
       searchType: 'city_state_pincode'
     });
-    
+
   } catch (error) {
     console.error('❌ Error in getNearbyDoctors:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Failed to fetch nearby doctors',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -720,11 +720,11 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the Earth in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c; // Distance in kilometers
   return Math.round(distance * 100) / 100; // Round to 2 decimal places
 }
@@ -735,38 +735,38 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 export const getAllDoctors = async (req, res) => {
   try {
     console.log('🔍 Fetching all doctors from database...');
-    
+
     // Fetch all doctors with comprehensive information
     const doctors = await User.find({ role: 'doctor' })
       .select('-password -emailVerificationToken -emailVerificationExpires -twoFactorSecret -backupCodes -mfaSecret')
       .lean();
-    
+
     console.log(`✅ Found ${doctors.length} doctors in database`);
-    
+
     // Transform the data to include all necessary fields
     const transformedDoctors = await Promise.all(doctors.map(async (doctor) => {
       console.log(`👨‍⚕️ Processing doctor: ${doctor.firstName} ${doctor.lastName} - ${doctor.specialization}`);
-      
+
       // Fetch real availability data for this doctor
       let availabilityData = null;
       let realTimeSlots = [];
       let workingHours = null;
-      
+
       try {
         // Import DoctorAvailability model
         const { default: DoctorAvailability } = await import('../models/DoctorAvailability.js');
-        
+
         // Get doctor's availability settings
         const availability = await DoctorAvailability.findOne({ doctorId: doctor._id });
-        
+
         if (availability) {
           availabilityData = availability;
-          
+
           // Get today's working status
           const today = new Date();
           const dayName = today.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
           const todaySchedule = availability.workingDays.find(day => day.day === dayName);
-          
+
           workingHours = {
             isWorkingToday: todaySchedule?.isWorking || false,
             startTime: todaySchedule?.startTime || availability.defaultStartTime,
@@ -776,12 +776,12 @@ export const getAllDoctors = async (req, res) => {
             status: availability.status,
             isOnline: availability.isOnline
           };
-          
+
           // Generate real available slots for today and tomorrow
           if (todaySchedule?.isWorking) {
             const todaySlots = availability.getAvailableSlots(today);
             const tomorrowSlots = availability.getAvailableSlots(new Date(today.getTime() + 24 * 60 * 60 * 1000));
-            
+
             // Convert to the format expected by frontend
             realTimeSlots = [
               ...todaySlots.map((slot, index) => ({
@@ -806,7 +806,7 @@ export const getAllDoctors = async (req, res) => {
               }))
             ];
           }
-          
+
           console.log(`✅ Found availability data for Dr. ${doctor.firstName}:`, {
             workingDays: workingHours.workingDays,
             todayStatus: workingHours.isWorkingToday,
@@ -837,7 +837,7 @@ export const getAllDoctors = async (req, res) => {
           isOnline: false
         };
       }
-      
+
       return {
         _id: doctor._id,
         firstName: doctor.firstName,
@@ -873,25 +873,25 @@ export const getAllDoctors = async (req, res) => {
         workingHoursSummary: workingHours ? `${workingHours.workingDays.join(', ').replace(/\b\w/g, l => l.toUpperCase())} ${workingHours.startTime}-${workingHours.endTime}` : 'Not specified'
       };
     }));
-    
+
     console.log(`🎯 Successfully transformed ${transformedDoctors.length} doctors with real availability data`);
     console.log('🏥 Sample doctor data:', {
       name: `${transformedDoctors[0]?.firstName} ${transformedDoctors[0]?.lastName}`,
       availability: transformedDoctors[0]?.availability,
       slotsCount: transformedDoctors[0]?.availableSlots?.length
     });
-    
-    res.json({ 
+
+    res.json({
       success: true,
       count: transformedDoctors.length,
-      doctors: transformedDoctors 
+      doctors: transformedDoctors
     });
   } catch (error) {
     console.error('❌ Get all doctors error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error while fetching doctors',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -902,13 +902,13 @@ export const getAllDoctors = async (req, res) => {
 export const getEmergencyDoctors = async (req, res) => {
   try {
     console.log('🚨 Fetching emergency doctors...');
-    
+
     const doctors = await User.find({ role: 'doctor', emergencyAvailable: true })
       .select('-password -emailVerificationToken -emailVerificationExpires -twoFactorSecret -backupCodes -mfaSecret')
       .lean();
-    
+
     console.log(`✅ Found ${doctors.length} emergency doctors`);
-    
+
     // Transform the data similar to getAllDoctors
     const transformedDoctors = doctors.map(doctor => ({
       _id: doctor._id,
@@ -920,7 +920,7 @@ export const getEmergencyDoctors = async (req, res) => {
       experience: doctor.experience || doctor.yearsOfExperience || 0,
       languages: doctor.languages || ['English'],
       ratings: doctor.ratings || { average: 4.5, count: 0 },
-              consultationFees: doctor.consultationFees || { online: 0, inPerson: 0 },
+      consultationFees: doctor.consultationFees || { online: 0, inPerson: 0 },
       location: {
         address: doctor.location?.address || doctor.hospital || 'Address not available',
         lat: doctor.location?.lat || 0,
@@ -948,18 +948,18 @@ export const getEmergencyDoctors = async (req, res) => {
         }
       ]
     }));
-    
-    res.json({ 
+
+    res.json({
       success: true,
       count: transformedDoctors.length,
-      doctors: transformedDoctors 
+      doctors: transformedDoctors
     });
   } catch (error) {
     console.error('❌ Get emergency doctors error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error while fetching emergency doctors',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -1036,7 +1036,7 @@ export const getProfileCompletionStatus = async (req, res) => {
 export const completeProfile = async (req, res) => {
   try {
     console.log('Complete profile request body:', req.body);
-    
+
     const {
       // Personal Information
       firstName,
@@ -1044,7 +1044,7 @@ export const completeProfile = async (req, res) => {
       phone,
       gender,
       dateOfBirth,
-      
+
       // Professional Information
       licenseNumber,
       specialization,
@@ -1052,21 +1052,21 @@ export const completeProfile = async (req, res) => {
       department,
       yearsOfExperience,
       bio,
-      
+
       // Location Information
       location,
-      
+
       // Consultation Details
       languages,
       consultationFees,
       specialties,
-      
+
       // Availability
       availability,
-      
+
       // Emergency Availability
       emergencyAvailable,
-      
+
       // Documents
       documents
     } = req.body;
@@ -1082,7 +1082,7 @@ export const completeProfile = async (req, res) => {
     if (phone) user.phone = phone;
     if (gender) user.gender = gender;
     if (dateOfBirth) user.dateOfBirth = dateOfBirth;
-    
+
     // Professional Information
     if (licenseNumber) user.licenseNumber = licenseNumber;
     if (specialization) user.specialization = specialization;
@@ -1090,7 +1090,7 @@ export const completeProfile = async (req, res) => {
     if (department) user.department = department;
     if (yearsOfExperience) user.yearsOfExperience = yearsOfExperience;
     if (bio) user.bio = bio;
-    
+
     // Parse and update complex fields
     if (languages) {
       try {
@@ -1105,14 +1105,14 @@ export const completeProfile = async (req, res) => {
       try {
         // Parse JSON string if it's a string, otherwise use as is
         const parsedFees = typeof consultationFees === 'string' ? JSON.parse(consultationFees) : consultationFees;
-        
+
         // Use the new validation method
         user.setConsultationFees(parsedFees.online, parsedFees.inPerson);
       } catch (error) {
         console.error('Error setting consultation fees:', error);
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: error.message || 'Invalid consultation fees format',
-          error: error.message 
+          error: error.message
         });
       }
     }
@@ -1129,7 +1129,7 @@ export const completeProfile = async (req, res) => {
       try {
         // Parse JSON string if it's a string, otherwise use as is
         const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
-        
+
         // Transform location data to match User model structure
         if (parsedLocation && typeof parsedLocation === 'object') {
           user.location = {
@@ -1138,9 +1138,9 @@ export const completeProfile = async (req, res) => {
             city: parsedLocation.city || '',
             state: parsedLocation.state || '',
             pincode: parsedLocation.pincode || '000000',
-            address: typeof parsedLocation.address === 'string' 
-              ? parsedLocation.address 
-              : parsedLocation.address?.street 
+            address: typeof parsedLocation.address === 'string'
+              ? parsedLocation.address
+              : parsedLocation.address?.street
                 ? `${parsedLocation.address.street}, ${parsedLocation.address.city || ''}, ${parsedLocation.address.state || ''}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
                 : `${parsedLocation.city || ''}, ${parsedLocation.state || ''}`.replace(/^,\s*/, '').replace(/,\s*$/, '')
           };
@@ -1177,9 +1177,9 @@ export const completeProfile = async (req, res) => {
       await user.save();
     } catch (validationError) {
       console.error('Validation error:', validationError);
-      return res.status(400).json({ 
-        message: 'Profile validation failed', 
-        errors: validationError.errors 
+      return res.status(400).json({
+        message: 'Profile validation failed',
+        errors: validationError.errors
       });
     }
 
@@ -1219,7 +1219,7 @@ export const completeProfile = async (req, res) => {
     console.error('Complete profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // Helper function to calculate profile completion percentage
 function calculateProfileCompletion(user) {
@@ -1239,8 +1239,8 @@ function calculateProfileCompletion(user) {
   let completedFields = 0;
   requiredFields.forEach(field => {
     const value = field.split('.').reduce((obj, key) => obj?.[key], user);
-    if (value !== undefined && value !== null && value !== '' && 
-        (Array.isArray(value) ? value.length > 0 : true)) {
+    if (value !== undefined && value !== null && value !== '' &&
+      (Array.isArray(value) ? value.length > 0 : true)) {
       completedFields++;
     }
   });
@@ -1265,10 +1265,10 @@ function getMissingFields(user) {
 
   return requiredFields.filter(({ field }) => {
     const value = field.split('.').reduce((obj, key) => obj?.[key], user);
-    return value === undefined || value === null || value === '' || 
-           (Array.isArray(value) && value.length === 0);
+    return value === undefined || value === null || value === '' ||
+      (Array.isArray(value) && value.length === 0);
   }).map(({ label }) => label);
-} 
+}
 
 // @desc    Upload document for doctor profile
 // @route   POST /api/doctor/upload-document
@@ -1336,7 +1336,7 @@ export const uploadDocument = async (req, res) => {
     console.error('Document upload error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};
 
 // @desc    Get doctor's real-time availability and slots
 // @route   GET /api/doctors/:id/availability
@@ -1345,9 +1345,9 @@ export const getDoctorAvailability = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { date } = req.query;
-    
+
     console.log(`🔍 Fetching availability for doctor ${doctorId} on date: ${date}`);
-    
+
     // Get doctor details
     const doctor = await User.findById(doctorId).select('-password');
     if (!doctor || doctor.role !== 'doctor') {
@@ -1356,58 +1356,58 @@ export const getDoctorAvailability = async (req, res) => {
         message: 'Doctor not found'
       });
     }
-    
+
     // Get doctor's availability settings
     const { default: DoctorAvailability } = await import('../models/DoctorAvailability.js');
     const availability = await DoctorAvailability.findOne({ doctorId });
-    
+
     if (!availability) {
       return res.status(404).json({
         success: false,
         message: 'Doctor availability not configured'
       });
     }
-    
+
     // Get target date (default to today if not specified)
     const targetDate = date ? new Date(date) : new Date();
     const dayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    
+
     // Check if doctor is working on the target date
     const daySchedule = availability.workingDays.find(day => day.day === dayName);
     const isWorkingToday = daySchedule?.isWorking || false;
-    
+
     // Generate available slots for the target date
     let availableSlots = [];
     if (isWorkingToday) {
       availableSlots = availability.getAvailableSlots(targetDate);
     }
-    
+
     // Check for existing appointments to mark slots as booked
     const { default: Appointment } = await import('../models/Appointment.js');
     const startOfDay = new Date(targetDate);
     startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
     endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
-    
+
     const existingAppointments = await Appointment.find({
       doctor: doctorId,
       scheduledDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ['pending', 'confirmed', 'in-progress'] }
     }).populate('patient', 'firstName lastName');
-    
+
     console.log(`🔍 Found ${existingAppointments.length} existing appointments for ${targetDate.toISOString().split('T')[0]}`);
-    
+
     // Transform slots to include real-time status and check for bookings
     const transformedSlots = availableSlots.map((slot, index) => {
       // Check if this slot is booked
-      const isBooked = existingAppointments.some(apt => 
+      const isBooked = existingAppointments.some(apt =>
         apt.startTime === slot.startTime || apt.startTime === slot.startTime + ':00'
       );
-      
-      const bookedAppointment = existingAppointments.find(apt => 
+
+      const bookedAppointment = existingAppointments.find(apt =>
         apt.startTime === slot.startTime || apt.startTime === slot.startTime + ':00'
       );
-      
+
       return {
         _id: `slot-${doctorId}-${targetDate.toISOString().split('T')[0]}-${index}`,
         doctorId: doctorId,
@@ -1421,14 +1421,14 @@ export const getDoctorAvailability = async (req, res) => {
         bookedBy: bookedAppointment ? `${bookedAppointment.patient.firstName} ${bookedAppointment.patient.lastName}` : null
       };
     });
-    
+
     // Check current time against working hours
     const now = new Date();
     const currentTime = now.toTimeString().split(' ')[0];
-    const isCurrentlyWorking = isWorkingToday && 
-      currentTime >= (daySchedule?.startTime || availability.defaultStartTime) && 
+    const isCurrentlyWorking = isWorkingToday &&
+      currentTime >= (daySchedule?.startTime || availability.defaultStartTime) &&
       currentTime <= (daySchedule?.endTime || availability.defaultEndTime);
-    
+
     res.json({
       success: true,
       data: {
@@ -1453,7 +1453,7 @@ export const getDoctorAvailability = async (req, res) => {
         nextAvailableDate: isWorkingToday ? targetDate.toISOString().split('T')[0] : getNextWorkingDay(availability.workingDays)
       }
     });
-    
+
   } catch (error) {
     console.error('❌ Error fetching doctor availability:', error);
     res.status(500).json({
@@ -1468,16 +1468,319 @@ export const getDoctorAvailability = async (req, res) => {
 const getNextWorkingDay = (workingDays) => {
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const today = new Date();
-  
+
   for (let i = 1; i <= 7; i++) {
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + i);
     const dayName = days[nextDay.getDay()];
-    
+
     if (workingDays.includes(dayName)) {
       return nextDay.toISOString().split('T')[0];
     }
   }
-  
+
   return null;
+};
+
+// @desc    Get doctor's patients (from appointments)
+// @route   GET /api/doctor/patients
+// @access  Private (Doctor only)
+export const getDoctorPatients = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+    const { search, status } = req.query;
+
+    console.log(`🔍 Fetching patients for doctor ${doctorId}`);
+
+    // Import Appointment model
+    const { default: Appointment } = await import('../models/Appointment.js');
+
+    // Find all appointments for this doctor
+    let appointmentQuery = { doctor: doctorId };
+
+    const appointments = await Appointment.find(appointmentQuery)
+      .populate('patient', 'firstName lastName email phone profileImage _id dateOfBirth primaryDiagnosis secondaryDiagnosis vitalSigns')
+      .sort({ scheduledDate: -1 })
+      .lean();
+
+    console.log(`✅ Found ${appointments.length} appointments for doctor`);
+
+    // Get unique patients with their appointment info
+    const patientMap = new Map();
+
+    for (const apt of appointments) {
+      if (!apt.patient) continue;
+
+      const patientId = apt.patient._id.toString();
+
+      if (!patientMap.has(patientId)) {
+        patientMap.set(patientId, {
+          _id: apt.patient._id,
+          firstName: apt.patient.firstName,
+          lastName: apt.patient.lastName,
+          email: apt.patient.email,
+          phone: apt.patient.phone,
+          profileImage: apt.patient.profileImage,
+          dateOfBirth: apt.patient.dateOfBirth,
+          primaryDiagnosis: apt.patient.primaryDiagnosis,
+          secondaryDiagnosis: apt.patient.secondaryDiagnosis,
+          latestVitals: apt.patient.vitalSigns && apt.patient.vitalSigns.length > 0
+            ? apt.patient.vitalSigns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+            : null,
+          lastAppointment: apt.scheduledDate,
+          totalAppointments: 1,
+          status: 'active' // Default status
+        });
+      } else {
+        const existing = patientMap.get(patientId);
+        existing.totalAppointments += 1;
+        // Keep the most recent appointment date
+        if (new Date(apt.scheduledDate) > new Date(existing.lastAppointment)) {
+          existing.lastAppointment = apt.scheduledDate;
+        }
+      }
+    }
+
+    let patients = Array.from(patientMap.values());
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      patients = patients.filter(p =>
+        p.firstName?.toLowerCase().includes(searchLower) ||
+        p.lastName?.toLowerCase().includes(searchLower) ||
+        p.email?.toLowerCase().includes(searchLower) ||
+        p._id.toString().includes(searchLower)
+      );
+    }
+
+    // Apply status filter
+    if (status && status !== 'all') {
+      patients = patients.filter(p => p.status === status);
+    }
+
+    // Get last proof for each patient
+    for (const patient of patients) {
+      try {
+        const lastProof = await Proof.findOne({
+          patient: patient._id
+        })
+          .sort({ createdAt: -1 })
+          .select('createdAt')
+          .lean();
+
+        patient.lastProof = lastProof ? lastProof.createdAt : null;
+      } catch (error) {
+        console.error(`Error fetching proof for patient ${patient._id}:`, error);
+        patient.lastProof = null;
+      }
+    }
+
+    console.log(`🎯 Returning ${patients.length} unique patients`);
+
+    res.json({
+      success: true,
+      count: patients.length,
+      patients
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching doctor patients:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patients',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Search for a patient by ID or email (doctor's patients only)
+// @route   GET /api/doctor/search-patient
+// @access  Private (Doctor only)
+export const searchDoctorPatient = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required'
+      });
+    }
+
+    console.log(`🔍 Searching for patient with query: ${query}`);
+
+    // Import Appointment model
+    const { default: Appointment } = await import('../models/Appointment.js');
+    const mongoose = await import('mongoose');
+
+    // Search for patient by email or ID
+    let searchQuery = {
+      role: 'patient',
+      $or: [
+        { email: query.toLowerCase() }
+      ]
+    };
+
+    // Add ID search if query is a valid ObjectId
+    if (mongoose.default.Types.ObjectId.isValid(query)) {
+      searchQuery.$or.push({ _id: query });
+    }
+
+    const patient = await User.findOne(searchQuery)
+      .select('firstName lastName email phone profileImage _id')
+      .lean();
+
+    if (!patient) {
+      return res.json({
+        success: true,
+        found: false,
+        message: 'Patient not found'
+      });
+    }
+
+    console.log(`✅ Found patient: ${patient.firstName} ${patient.lastName}`);
+
+    // Verify this doctor has treated this patient
+    const hasAppointment = await Appointment.findOne({
+      doctor: doctorId,
+      patient: patient._id
+    }).lean();
+
+    if (!hasAppointment) {
+      return res.json({
+        success: true,
+        found: false,
+        message: 'Patient not found in your records',
+        note: 'This patient has not had any appointments with you'
+      });
+    }
+
+    // Get appointment history count
+    const appointmentCount = await Appointment.countDocuments({
+      doctor: doctorId,
+      patient: patient._id
+    });
+
+    console.log(`✅ Patient has ${appointmentCount} appointments with this doctor`);
+
+    res.json({
+      success: true,
+      found: true,
+      patient: {
+        _id: patient._id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone,
+        profileImage: patient.profileImage,
+        hasAppointmentHistory: true,
+        totalAppointments: appointmentCount
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error searching for patient:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search for patient',
+      error: error.message
+    });
+  }
+}
+
+// @desc    Get patient health analytics (vitals history)
+// @route   GET /api/doctor/patients/:id/analytics
+// @access  Private (Doctor only)
+export const getPatientHealthAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Import Patient model
+    const { default: Patient } = await import('../models/Patient.js');
+
+    // 1. First find the user to get their email
+    const user = await User.findById(id);
+    let patient = null;
+
+    if (user) {
+      console.log(`🔍 Resolving patient record for user: ${user.email} (ID: ${id})`);
+      // 2. Find patient clinical record by email
+      patient = await Patient.findOne({ email: user.email });
+    }
+
+    // 3. Fallbacks if user not found or email lookup failed
+    if (!patient) {
+      console.log(`⚠️ Email lookup failed, trying direct ID lookups for: ${id}`);
+      patient = await Patient.findById(id);
+      if (!patient) {
+        patient = await Patient.findOne({ patientId: id });
+      }
+    }
+
+    if (!patient) {
+      console.error(`❌ Patient analytics error: Patient not found for ID ${id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Patient clinical record not found'
+      });
+    }
+
+    // Process vital signs for charts
+    const vitalSigns = patient.vitalSigns || [];
+
+    // Sort by timestamp ascending
+    vitalSigns.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    const analyticsData = vitalSigns.map(vital => {
+      // Parse blood pressure
+      let bp = { systolic: null, diastolic: null };
+      if (vital.bloodPressure && vital.bloodPressure.includes('/')) {
+        const [sys, dia] = vital.bloodPressure.split('/').map(n => parseInt(n.trim()));
+        bp = { systolic: sys, diastolic: dia };
+      }
+
+      return {
+        date: vital.timestamp,
+        timestamp: new Date(vital.timestamp).getTime(),
+        bloodPressure: vital.bloodPressure,
+        systolic: bp.systolic,
+        diastolic: bp.diastolic,
+        heartRate: parseInt(vital.heartRate) || null,
+        temperature: parseFloat(vital.temperature) || null,
+        weight: parseFloat(vital.weight) || null,
+        oxygenSaturation: parseInt(vital.oxygenSaturation) || null,
+        glucose: vital.bloodGlucose?.value || null,
+        glucoseType: vital.bloodGlucose?.type || null,
+        hba1c: vital.hba1c || null,
+        peakFlow: vital.peakFlow || null,
+        ldl: vital.cholesterol?.ldl || null,
+        hdl: vital.cholesterol?.hdl || null,
+        triglycerides: vital.cholesterol?.triglycerides || null
+      };
+    });
+
+    res.json({
+      success: true,
+      patient: {
+        id: patient._id,
+        patientId: patient.patientId,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone,
+        monitoredConditions: patient.monitoredConditions || []
+      },
+      analytics: analyticsData
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching patient analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patient analytics',
+      error: error.message
+    });
+  }
 }; 

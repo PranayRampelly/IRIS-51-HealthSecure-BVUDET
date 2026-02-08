@@ -1,4 +1,4 @@
-import apiService from './api.js';
+import apiService from './api';
 
 export interface KeyMetrics {
   totalPolicies: number;

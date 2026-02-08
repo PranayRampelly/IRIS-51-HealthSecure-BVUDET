@@ -10,7 +10,10 @@ import {
   updateDoctorProfile,
   getProfileCompletionStatus,
   completeProfile,
-  uploadDocument
+  uploadDocument,
+  getDoctorPatients,
+  searchDoctorPatient,
+  getPatientHealthAnalytics
 } from '../controllers/doctorController.js';
 import { auth, requireDoctor } from '../middleware/auth.js';
 import { validateMongoId } from '../middleware/validation.js';
@@ -40,5 +43,10 @@ router.post('/complete-profile', uploadCloud.fields([
   { name: 'degree', maxCount: 3 }
 ]), completeProfile);
 router.post('/upload-document', uploadCloud.single('file'), handleUploadError, uploadDocument);
+
+// New routes for doctor patient search and proof request
+router.get('/my-patients', getDoctorPatients);
+router.get('/search-patient', searchDoctorPatient);
+router.get('/patients/:id/analytics', getPatientHealthAnalytics);
 
 export default router; 

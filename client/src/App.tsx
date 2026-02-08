@@ -73,7 +73,11 @@ import HospitalDiscovery from "./pages/patient/HospitalDiscovery";
 import RequestAdmission from "./pages/patient/RequestAdmission";
 import AdmissionRequests from "./pages/patient/AdmissionRequests";
 import PatientAIAssistant from "./pages/patient/PatientAIAssistant";
+<<<<<<< HEAD
 import PatientMessages from "./pages/patient/PatientMessages";
+=======
+import PatientHealthAnalytics from "./pages/patient/PatientHealthAnalytics";
+>>>>>>> d41f4b50303253f3922bf364d1e62a5a9e4e000f
 import HospitalAdmissionRequests from "./pages/hospital/AdmissionRequests";
 
 // Doctor Dashboard Pages
@@ -97,6 +101,7 @@ import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorAnalytics from "./pages/doctor/DoctorAnalytics";
 import DoctorPatientRecords from "./pages/doctor/DoctorPatientRecords";
 import DoctorPatientAnalytics from "./pages/doctor/DoctorPatientAnalytics";
+import DoctorPatientAnalyticsDetail from "./pages/doctor/DoctorPatientAnalyticsDetail";
 import DoctorScheduleAppointment from "./pages/doctor/DoctorScheduleAppointment";
 import DoctorMessages from "./pages/doctor/DoctorMessages";
 import DoctorNotifications from "./pages/doctor/DoctorNotifications";
@@ -337,6 +342,7 @@ const App = () => {
                 <Route path="admission-requests" element={<AdmissionRequests />} />
                 <Route path="messages" element={<PatientMessages />} />
                 <Route path="ai-assistant" element={<PatientAIAssistant />} />
+                <Route path="analytics" element={<PatientHealthAnalytics />} />
               </Route>
 
               {/* BioAura Dashboard Routes */}
@@ -391,6 +397,7 @@ const App = () => {
                 <Route path="patient-search" element={<DoctorPatientSearch />} />
                 <Route path="patient-records" element={<DoctorPatientRecords />} />
                 <Route path="patient-analytics" element={<DoctorPatientAnalytics />} />
+                <Route path="patient-analytics/:patientId" element={<DoctorPatientAnalyticsDetail />} />
                 <Route path="patient/:patientId" element={<DoctorPatientDetail />} />
                 <Route path="proof/:proofId" element={<DoctorProofDetail />} />
                 <Route path="messages" element={<DoctorMessages />} />

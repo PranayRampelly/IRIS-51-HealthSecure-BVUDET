@@ -530,6 +530,17 @@ io.on('connection', (socket) => {
     console.log(`Client ${socket.id} left doctor room: ${doctorId}`);
   });
 
+  // Handle patient vitals tracking rooms
+  socket.on('join-patient-room', (patientId) => {
+    socket.join(`patient-${patientId}`);
+    console.log(`Client ${socket.id} joined patient room: ${patientId}`);
+  });
+
+  socket.on('leave-patient-room', (patientId) => {
+    socket.leave(`patient-${patientId}`);
+    console.log(`Client ${socket.id} left patient room: ${patientId}`);
+  });
+
   // Handle disconnection
   socket.on('disconnect', (reason) => {
     console.log('Client disconnected:', socket.id, 'Reason:', reason);
