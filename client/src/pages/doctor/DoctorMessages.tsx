@@ -570,7 +570,7 @@ const DoctorMessages: React.FC = () => {
                               ) : (
                                 <div className="max-w-xs lg:max-w-md">
                                   <VoiceMessagePlayer
-                                    audioUrl={message.audioUrl!}
+                                    audioUrl={message.audioUrl ? `${API_URL}${message.audioUrl}` : ''}
                                     duration={message.audioDuration || 0}
                                     sender={message.sender}
                                     timestamp={message.createdAt}

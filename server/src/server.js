@@ -120,7 +120,8 @@ app.use((req, res, next) => {
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for development
+  contentSecurityPolicy: false, // Disable CSP for development
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin resources (CORP)
 }));
 
 // CORS configuration

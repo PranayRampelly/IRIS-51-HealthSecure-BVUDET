@@ -34,6 +34,7 @@ const connectDB = async (retryCount = 0, maxRetries = 3) => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
     console.log(`🔌 Connection State: ${conn.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
+    console.log(`🔗 Connection URI: ${uri.split('@').pop()}`); // Log the host part of URI
 
     // Handle connection errors
     mongoose.connection.on('error', err => {

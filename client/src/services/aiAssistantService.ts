@@ -5,7 +5,7 @@ export interface ChatMessage {
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
-  category?: 'general' | 'symptoms' | 'medication' | 'lifestyle' | 'emergency';
+  category?: 'general' | 'symptoms' | 'medication' | 'lifestyle' | 'emergency' | 'error';
 }
 
 export interface AIResponse {
@@ -43,19 +43,23 @@ class AIAssistantService {
    */
   async sendMessage(message: string, userContext?: UserContext): Promise<AIResponse> {
     try {
+      console.log('Sending message to AI:', message);
       const response = await api.post(`${this.baseURL}/chat`, {
         message,
         userContext
       });
 
-      if (response.data.success) {
-        return response.data.data;
+      console.log('AI Chat Response:', response);
+
+      // Handle both {success, data} and raw data if necessary
+      if (response && response.success) {
+        return response.data;
       } else {
-        throw new Error(response.data.message || 'Failed to send message');
+        throw new Error(response?.message || 'Failed to send message');
       }
     } catch (error) {
       console.error('AI Assistant Service Error:', error);
-      throw new Error('Failed to communicate with AI assistant. Please try again.');
+      throw error;
     }
   }
 
@@ -64,17 +68,20 @@ class AIAssistantService {
    */
   async getHealthInsights(): Promise<HealthInsight[]> {
     try {
+      console.log('Fetching health insights...');
       const response = await api.get(`${this.baseURL}/insights`);
 
-      if (response.data.success) {
-        return response.data.data;
+      console.log('Health Insights Response:', response);
+
+      if (response && response.success) {
+        return response.data;
       } else {
-        throw new Error(response.data.message || 'Failed to get health insights');
+        throw new Error(response?.message || 'Failed to get health insights');
       }
     } catch (error) {
       console.error('Health Insights Error:', error);
       // Return default insights on error
-      return this.getDefaultInsights();
+      throw error;
     }
   }
 
@@ -83,37 +90,54 @@ class AIAssistantService {
    */
   async getHealthTips(category?: string): Promise<HealthInsight[]> {
     try {
+      console.log('Fetching health tips for category:', category);
       const params = category ? { category } : {};
       const response = await api.get(`${this.baseURL}/tips`, { params });
 
-      if (response.data.success) {
-        return response.data.data;
+      console.log('Health Tips Response:', response);
+
+      if (response && response.success) {
+        return response.data;
       } else {
-        throw new Error(response.data.message || 'Failed to get health tips');
+        throw new Error(response?.message || 'Failed to get health tips');
       }
     } catch (error) {
       console.error('Health Tips Error:', error);
-      return this.getDefaultInsights();
+      throw error;
+    }
+  }
+
+  /**
+   * Get chat history for the current user
+   */
+  async getChatHistory(): Promise<ChatMessage[]> {
+    try {
+      console.log('Fetching chat history...');
+      const response = await api.get(`${this.baseURL}/chat/history`);
+
+      console.log('Chat History Response:', response);
+
+      if (response && response.success) {
+        // Map backend Date strings to Date objects
+        if (Array.isArray(response.data)) {
+          return response.data.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+        }
+        return []; // Return empty array if data is not an array
+      } else {
+        throw new Error(response?.message || 'Failed to get chat history');
+      }
+    } catch (error) {
+      console.error('Get Chat History Error:', error);
+      throw error;
     }
   }
 
   /**
    * Clear chat history
    */
-  async clearChatHistory(): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await api.delete(`${this.baseURL}/chat/history`);
-
-      if (response.data.success) {
-        return response.data.data;
-      } else {
-        throw new Error(response.data.message || 'Failed to clear chat history');
-      }
-    } catch (error) {
-      console.error('Clear Chat History Error:', error);
-      throw new Error('Failed to clear chat history. Please try again.');
-    }
-  }
 
   /**
    * Check AI service health
@@ -121,11 +145,12 @@ class AIAssistantService {
   async checkAIHealth(): Promise<{ status: string; responseTime: string; model: string }> {
     try {
       const response = await api.get(`${this.baseURL}/health`);
+      console.log('AI Health Check Result:', response);
 
-      if (response.data.success) {
-        return response.data.data;
+      if (response && (response.success || response.status === 'operational')) {
+        return response.data || response;
       } else {
-        throw new Error(response.data.message || 'AI service health check failed');
+        throw new Error(response?.message || 'AI service health check failed');
       }
     } catch (error) {
       console.error('AI Health Check Error:', error);
@@ -178,7 +203,7 @@ class AIAssistantService {
    */
   generateMockResponse(userInput: string): AIResponse {
     const input = userInput.toLowerCase();
-    
+
     if (input.includes('symptom') || input.includes('pain') || input.includes('ache')) {
       return {
         success: true,
@@ -190,7 +215,7 @@ class AIAssistantService {
         safetyWarnings: ['Always consult healthcare professionals for medical advice']
       };
     }
-    
+
     if (input.includes('medication') || input.includes('medicine') || input.includes('pill')) {
       return {
         success: true,
@@ -202,7 +227,7 @@ class AIAssistantService {
         safetyWarnings: ['Always consult healthcare professionals about medications']
       };
     }
-    
+
     if (input.includes('lifestyle') || input.includes('diet') || input.includes('exercise')) {
       return {
         success: true,
@@ -214,11 +239,11 @@ class AIAssistantService {
         safetyWarnings: []
       };
     }
-    
+
     if (input.includes('emergency') || input.includes('urgent')) {
       return {
         success: true,
-        message: "If you're experiencing a medical emergency, please call emergency services immediately (911 in the US). I can provide general guidance, but serious symptoms require immediate professional medical attention.",
+        message: "If you're experiencing a medical emergency, please call emergency services immediately (911 in the US). I can provide direct analysis for non-life-threatening issues, but serious symptoms require immediate professional clinical attention.",
         category: 'emergency',
         priority: 'high',
         suggestions: ['Call emergency services immediately', 'Seek immediate medical attention'],
@@ -226,15 +251,15 @@ class AIAssistantService {
         safetyWarnings: ['For emergencies, call 911 or emergency services immediately']
       };
     }
-    
+
     return {
       success: true,
-      message: "Thank you for your question. I'm here to provide general health information and guidance. For specific medical advice, please consult with your healthcare provider. How else can I assist you today?",
+      message: "I'm processing your query. As an advanced clinical assistant, I'll provide a direct analysis once the connection is restored.",
       category: 'general',
       priority: 'low',
-      suggestions: ['Ask specific questions', 'Provide more context'],
+      suggestions: ['Check connection', 'Try again later'],
       timestamp: new Date(),
-      safetyWarnings: ['Always consult healthcare professionals for medical advice']
+      safetyWarnings: []
     };
   }
 }

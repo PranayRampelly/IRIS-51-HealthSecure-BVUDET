@@ -97,12 +97,9 @@ const navigationMap: Record<string, NavItem[]> = {
     { name: 'Find Doctors', href: '/patient/find-doctors', icon: Stethoscope },
     { name: 'Hospital Appointments', href: '/patient/hospital-appointments', icon: Calendar },
 
-    // Smart Features Section
-    { name: 'Smart Features', href: '/patient/smart-features', icon: Zap },
+    // AI & Analytics Section
     { name: 'AI Health Assistant', href: '/patient/ai-assistant', icon: Brain },
-    { name: 'Health Insights', href: '/patient/health-insights', icon: Target },
     { name: 'Chronic Disease Tracker', href: '/patient/analytics', icon: Activity },
-    { name: 'Smart Notifications', href: '/patient/notifications', icon: Bell },
 
     // Existing Features
     { name: 'My Insurance', href: '/patient/insurance', icon: CreditCard },
@@ -261,14 +258,11 @@ const patientNavigationSections: NavSection[] = [
     ]
   },
   {
-    title: 'Smart Features',
-    icon: Zap,
+    title: 'AI & Analytics',
+    icon: Brain,
     items: [
-      { name: 'Smart Features', href: '/patient/smart-features', icon: Zap },
       { name: 'AI Health Assistant', href: '/patient/ai-assistant', icon: Brain },
-      { name: 'Health Insights', href: '/patient/health-insights', icon: Target },
       { name: 'Chronic Disease Tracker', href: '/patient/analytics', icon: Activity },
-      { name: 'Smart Notifications', href: '/patient/notifications', icon: Bell },
     ]
   },
   {

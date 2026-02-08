@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MapPin, Navigation, ExternalLink, Phone, Mail, 
+import {
+  MapPin, Navigation, ExternalLink, Phone, Mail,
   Clock, Car, Route, X, Share2, User
 } from 'lucide-react';
 import { Hospital } from '@/services/hospitalServicesService';
 import { Location } from '@/types/appointment';
 import { toast } from 'sonner';
+
+import L from 'leaflet';
 
 interface HospitalMapProps {
   hospital: Hospital;
@@ -19,7 +21,7 @@ interface HospitalMapProps {
 
 const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClose }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
+  const mapInstanceRef = useRef<any>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [duration, setDuration] = useState<string | null>(null);
   const [routeType, setRouteType] = useState<'driving' | 'walking' | 'transit'>('driving');
@@ -28,16 +30,19 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
     if (mapRef.current && hospital.coordinates) {
       initializeMap();
     }
-  }, [hospital.coordinates]);
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [hospital.coordinates, routeType]);
 
   const initializeMap = () => {
-    // Using OpenStreetMap with Leaflet (free alternative to Google Maps)
-    const L = (window as any).L;
-    
-    if (!L) {
-      // Load Leaflet CSS and JS dynamically
-      loadLeaflet();
-      return;
+    if (!mapRef.current) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
     }
 
     const hospitalLat = hospital.coordinates.lat;
@@ -45,6 +50,7 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
 
     // Create map
     const mapInstance = L.map(mapRef.current).setView([hospitalLat, hospitalLng], 15);
+    mapInstanceRef.current = mapInstance;
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -52,7 +58,7 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
     }).addTo(mapInstance);
 
     // Add hospital marker
-    const hospitalMarker = L.marker([hospitalLat, hospitalLng])
+    L.marker([hospitalLat, hospitalLng])
       .addTo(mapInstance)
       .bindPopup(`
         <div class="p-2">
@@ -64,7 +70,7 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
 
     // Add user location marker if available
     if (userLocation?.latitude && userLocation?.longitude) {
-      const userMarker = L.marker([userLocation.latitude, userLocation.longitude])
+      L.marker([userLocation.latitude, userLocation.longitude])
         .addTo(mapInstance)
         .bindPopup('Your Location')
         .setIcon(L.divIcon({
@@ -76,30 +82,6 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
       // Calculate and display route
       calculateRoute(mapInstance, userLocation, hospital.coordinates);
     }
-
-    setMap(mapInstance);
-
-    return () => {
-      if (mapInstance) {
-        mapInstance.remove();
-      }
-    };
-  };
-
-  const loadLeaflet = () => {
-    // Load Leaflet CSS
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
-    // Load Leaflet JS
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => {
-      initializeMap();
-    };
-    document.head.appendChild(script);
   };
 
   const calculateRoute = async (mapInstance: any, from: Location, to: { lat: number; lng: number }) => {
@@ -108,9 +90,9 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
       const response = await fetch(
         `https://router.project-osrm.org/route/v1/${routeType}/${from.longitude},${from.latitude};${to.lng},${to.lat}?overview=full&geometries=geojson`
       );
-      
+
       const data = await response.json();
-      
+
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         setDistance(route.distance / 1000); // Convert to km
@@ -138,12 +120,12 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
     if (hospital.coordinates) {
       const { lat, lng } = hospital.coordinates;
       let fromCoords = '';
-      
+
       // Get user's current location if available
       if (userLocation?.latitude && userLocation?.longitude) {
         fromCoords = `${userLocation.longitude},${userLocation.latitude}`;
       }
-      
+
       // OpenStreetMap expects longitude,latitude format
       const toCoords = `${lng},${lat}`;
       const url = `https://www.openstreetmap.org/directions?from=${fromCoords}&to=${toCoords}`;
@@ -220,12 +202,12 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
           {/* Map */}
           <div className="lg:col-span-2">
             <div className="relative">
-              <div 
-                ref={mapRef} 
+              <div
+                ref={mapRef}
                 className="w-full h-96 rounded-lg border border-gray-200"
                 style={{ minHeight: '400px' }}
               />
-              
+
               {/* Route Type Selector */}
               {userLocation && (
                 <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2">
@@ -316,25 +298,25 @@ const HospitalMap: React.FC<HospitalMapProps> = ({ hospital, userLocation, onClo
 
             {/* Action Buttons */}
             <div className="space-y-2">
-              <Button 
+              <Button
                 onClick={handleGetDirections}
                 className="w-full bg-health-teal hover:bg-health-aqua"
               >
                 <Navigation className="h-4 w-4 mr-2" />
                 Get Directions
               </Button>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 onClick={handleOpenInMaps}
                 className="w-full"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open in Maps
               </Button>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 onClick={handleShareLocation}
                 className="w-full"
               >

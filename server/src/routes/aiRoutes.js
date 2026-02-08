@@ -5,7 +5,8 @@ import {
   clearChatHistory,
   getAIStats,
   checkAIHealth,
-  getHealthTips
+  getHealthTips,
+  getChatHistory
 } from '../controllers/aiController.js';
 import { auth } from '../middleware/auth.js';
 
@@ -17,8 +18,9 @@ router.get('/tips', getHealthTips);
 
 // Protected routes - apply auth middleware individually
 router.post('/chat', auth, sendMessage);
+router.get('/chat/history', auth, getChatHistory);
 router.delete('/chat/history', auth, clearChatHistory);
 router.get('/insights', auth, getHealthInsights);
 router.get('/stats', auth, getAIStats);
 
-export default router; 
+export default router;

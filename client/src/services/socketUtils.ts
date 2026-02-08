@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+import io from 'socket.io-client';
 
 export interface SocketConfig {
   url: string;
@@ -16,12 +16,12 @@ export interface SocketConfig {
 }
 
 export class SocketManager {
-  private socket: Socket | null = null;
+  private socket: any = null;
   private config: SocketConfig;
   private isConnected: boolean = false;
   private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private maxReconnectAttempts: number = 10;
+  private reconnectTimer: any = null;
 
   constructor(config: SocketConfig) {
     this.config = {
@@ -29,7 +29,7 @@ export class SocketManager {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       maxReconnectionAttempts: 10,
@@ -38,7 +38,7 @@ export class SocketManager {
     };
   }
 
-  connect(): Promise<Socket> {
+  connect(): Promise<any> {
     return new Promise((resolve, reject) => {
       try {
         // Close existing socket if it exists
@@ -50,7 +50,7 @@ export class SocketManager {
         // Ensure auth is properly formatted as an object to prevent parse errors
         const authData = this.config.auth || {};
         const queryData = this.config.query || {};
-        
+
         // Validate and format auth data
         let formattedAuth: any = {};
         if (authData && typeof authData === 'object') {
@@ -59,28 +59,25 @@ export class SocketManager {
           // If auth is a string (like a token), wrap it properly
           formattedAuth = { token: authData };
         }
-        
+
         // Ensure query is an object
         const formattedQuery: any = queryData && typeof queryData === 'object' ? queryData : {};
-        
+
         this.socket = io(this.config.url, {
           path: this.config.path,
-          transports: this.config.transports,
-          timeout: this.config.timeout,
+          transports: ['websocket', 'polling'], // Ensure WebSocket is preferred but fallback to polling
+          timeout: 20000,
           forceNew: true,
-          reconnection: this.config.reconnection,
-          reconnectionAttempts: this.config.reconnectionAttempts,
-          reconnectionDelay: this.config.reconnectionDelay,
-          reconnectionDelayMax: this.config.reconnectionDelayMax,
-          maxReconnectionAttempts: this.config.maxReconnectionAttempts,
+          reconnection: true,
+          reconnectionAttempts: 10, // Increase attempts
+          reconnectionDelay: 2000, // Slightly longer delay for stability
+          reconnectionDelayMax: 10000,
           autoConnect: this.config.autoConnect,
           query: formattedQuery,
           auth: formattedAuth,
-          // Add options to prevent parse errors
           withCredentials: true,
-          // Ensure proper data serialization
-          reconnectionDelayFactor: 1.5
-        });
+          randomizationFactor: 0.5
+        } as any);
 
         // Set up event handlers
         this.setupEventHandlers();
@@ -90,11 +87,11 @@ export class SocketManager {
           console.log('Socket connected successfully');
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          resolve(this.socket!);
+          resolve(this.socket);
         });
 
         // Handle connection error
-        this.socket.on('connect_error', (error) => {
+        this.socket.on('connect_error', (error: any) => {
           console.error('Socket connection error:', error);
           this.isConnected = false;
           reject(error);
@@ -114,26 +111,26 @@ export class SocketManager {
   private setupEventHandlers() {
     if (!this.socket) return;
 
-    this.socket.on('disconnect', (reason) => {
+    this.socket.on('disconnect', (reason: any) => {
       console.log('Socket disconnected:', reason);
       this.isConnected = false;
-      
+
       // Attempt to reconnect if not manually disconnected
       if (reason === 'io server disconnect') {
-        this.socket!.connect();
+        this.socket.connect();
       }
     });
 
-    this.socket.on('reconnect', (attemptNumber) => {
+    this.socket.on('reconnect', (attemptNumber: any) => {
       console.log('Socket reconnected after', attemptNumber, 'attempts');
       this.isConnected = true;
       this.reconnectAttempts = 0;
     });
 
-    this.socket.on('reconnect_error', (error) => {
+    this.socket.on('reconnect_error', (error: any) => {
       console.error('Socket reconnection error:', error);
       this.reconnectAttempts++;
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         console.error('Max reconnection attempts reached');
         this.isConnected = false;
@@ -145,7 +142,7 @@ export class SocketManager {
       this.isConnected = false;
     });
 
-    this.socket.on('error', (error) => {
+    this.socket.on('error', (error: any) => {
       console.error('Socket error:', error);
     });
   }
@@ -156,7 +153,7 @@ export class SocketManager {
       this.socket = null;
       this.isConnected = false;
     }
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -199,7 +196,7 @@ export class SocketManager {
     return this.isConnected;
   }
 
-  getSocket(): Socket | null {
+  getSocket(): any {
     return this.socket;
   }
 
@@ -209,13 +206,13 @@ export class SocketManager {
   }
 
   // Method to manually reconnect
-  reconnect(): Promise<Socket> {
+  reconnect(): Promise<any> {
     this.disconnect();
     return this.connect();
   }
 
   // Method to update auth token and reconnect
-  updateAuthToken(token: string): Promise<Socket> {
+  updateAuthToken(token: string): Promise<any> {
     this.config.auth = { ...this.config.auth, token };
     return this.reconnect();
   }
@@ -231,7 +228,7 @@ export class SocketManager {
 const getAuthToken = (): string => {
   // First try to get token directly
   let token = localStorage.getItem('token');
-  
+
   // If not found, try to get it from user data stored by AuthContext
   if (!token) {
     const userData = localStorage.getItem('user');
@@ -244,7 +241,7 @@ const getAuthToken = (): string => {
       }
     }
   }
-  
+
   return token || '';
 };
 
@@ -293,12 +290,12 @@ export const getOptimalTransport = (): string[] => {
 // Utility function to handle connection errors
 export const handleSocketError = (error: any): void => {
   console.error('Socket error occurred:', error);
-  
+
   // You can add custom error handling logic here
   // For example, show a toast notification to the user
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('socket-error', { 
-      detail: { error: error.message || 'Connection error' } 
+    window.dispatchEvent(new CustomEvent('socket-error', {
+      detail: { error: error.message || 'Connection error' }
     }));
   }
 };
@@ -309,16 +306,16 @@ export const validateSocketConfig = (config: SocketConfig): boolean => {
     console.error('Socket URL is required');
     return false;
   }
-  
+
   if (config.timeout && config.timeout < 1000) {
     console.error('Socket timeout must be at least 1000ms');
     return false;
   }
-  
+
   if (config.reconnectionAttempts && config.reconnectionAttempts < 1) {
     console.error('Reconnection attempts must be at least 1');
     return false;
   }
-  
+
   return true;
 }; 

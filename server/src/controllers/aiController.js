@@ -1,5 +1,8 @@
 import aiService from '../services/aiService.js';
 import User from '../models/User.js';
+import Patient from '../models/Patient.js';
+import HealthRecord from '../models/HealthRecord.js';
+import AIChatMessage from '../models/AIChatMessage.js';
 
 /**
  * @desc    Send message to AI Health Assistant
@@ -18,23 +21,37 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // Get user data for context
+    // 1. Get user and clinical data for context
     let userData = {};
     try {
-      const user = await User.findById(userId).select('dateOfBirth gender medicalConditions currentMedications');
+      const user = await User.findById(userId).select('dateOfBirth gender medicalConditions currentMedications bloodType email');
       if (user) {
+        // Fetch clinical data from Patient model
+        const patient = await Patient.findOne({ email: user.email });
+
+        // Fetch recent health records
+        const recentRecords = await HealthRecord.find({ patientId: userId })
+          .sort({ date: -1 })
+          .limit(3)
+          .select('type title date description');
+
         userData = {
           age: user.dateOfBirth ? calculateAge(user.dateOfBirth) : null,
           gender: user.gender,
-          medicalHistory: user.medicalConditions ? [user.medicalConditions] : [],
-          medications: user.currentMedications ? [user.currentMedications] : []
+          bloodType: user.bloodType || (patient ? patient.bloodType : null),
+          medicalHistory: user.medicalConditions ? [user.medicalConditions] : (patient ? [patient.primaryDiagnosis, ...(patient.secondaryDiagnosis || [])].filter(Boolean) : []),
+          medications: user.currentMedications ? [user.currentMedications] : (patient ? patient.currentMedications.map(m => m.medication) : []),
+          latestVitals: patient && patient.vitalSigns && patient.vitalSigns.length > 0
+            ? patient.vitalSigns[patient.vitalSigns.length - 1]
+            : null,
+          recentRecords: recentRecords.map(r => `${r.type}: ${r.title} (${new Date(r.date).toLocaleDateString()})`)
         };
       }
     } catch (userError) {
-      console.log('Could not fetch user data for AI context:', userError.message);
+      console.error('Could not fetch user data for AI context:', userError.message);
     }
 
-    // Generate AI response
+    // 2. Generate AI response
     const response = await aiService.generateHealthResponse(
       message.trim(),
       userId,
@@ -57,32 +74,65 @@ export const sendMessage = async (req, res) => {
 };
 
 /**
+ * @desc    Get chat history for user
+ * @route   GET /api/ai/chat/history
+ * @access  Private
+ */
+export const getChatHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const history = await AIChatMessage.find({ userId })
+      .sort({ timestamp: 1 })
+      .limit(50);
+
+    // Map to frontend format
+    const formattedHistory = history.map(msg => ({
+      id: msg._id,
+      type: msg.role === 'user' ? 'user' : 'ai',
+      content: msg.content,
+      category: msg.category,
+      priority: msg.priority,
+      suggestions: msg.suggestions,
+      timestamp: msg.timestamp,
+      safetyWarnings: msg.safetyWarnings
+    }));
+
+    res.json({
+      success: true,
+      data: formattedHistory
+    });
+  } catch (error) {
+    console.error('Get Chat History Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch chat history.'
+    });
+  }
+};
+
+/**
  * @desc    Get health insights for user
  * @route   GET /api/ai/insights
  * @access  Private
  */
 export const getHealthInsights = async (req, res) => {
   try {
-    // Check if user is authenticated
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required to get personalized health insights.'
-      });
-    }
-
     const userId = req.user.id;
 
-    // Get user data
+    // Get user data for insights context
     let userData = {};
     try {
-      const user = await User.findById(userId).select('dateOfBirth gender medicalConditions currentMedications');
+      const user = await User.findById(userId).select('dateOfBirth gender medicalConditions currentMedications email');
       if (user) {
+        const patient = await Patient.findOne({ email: user.email });
         userData = {
           age: user.dateOfBirth ? calculateAge(user.dateOfBirth) : null,
           gender: user.gender,
-          medicalHistory: user.medicalConditions ? [user.medicalConditions] : [],
-          medications: user.currentMedications ? [user.currentMedications] : []
+          medicalHistory: user.medicalConditions ? [user.medicalConditions] : (patient ? [patient.primaryDiagnosis].filter(Boolean) : []),
+          medications: user.currentMedications ? [user.currentMedications] : (patient ? patient.currentMedications.map(m => m.medication) : []),
+          latestVitals: patient && patient.vitalSigns && patient.vitalSigns.length > 0
+            ? patient.vitalSigns[patient.vitalSigns.length - 1]
+            : null
         };
       }
     } catch (userError) {
@@ -115,7 +165,7 @@ export const getHealthInsights = async (req, res) => {
 export const clearChatHistory = async (req, res) => {
   try {
     const userId = req.user.id;
-    const result = aiService.clearChatHistory(userId);
+    const result = await aiService.clearChatHistory(userId);
 
     res.json({
       success: true,
@@ -139,7 +189,6 @@ export const clearChatHistory = async (req, res) => {
  */
 export const getAIStats = async (req, res) => {
   try {
-    // Check if user is admin
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -147,7 +196,7 @@ export const getAIStats = async (req, res) => {
       });
     }
 
-    const stats = aiService.getChatStats();
+    const stats = await aiService.getChatStats();
 
     res.json({
       success: true,
@@ -158,8 +207,7 @@ export const getAIStats = async (req, res) => {
     console.error('AI Stats Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get AI statistics.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to get AI statistics.'
     });
   }
 };
@@ -171,7 +219,6 @@ export const getAIStats = async (req, res) => {
  */
 export const checkAIHealth = async (req, res) => {
   try {
-    // Simple health check without calling AI service
     res.json({
       success: true,
       message: 'AI service is healthy',
@@ -187,8 +234,7 @@ export const checkAIHealth = async (req, res) => {
     console.error('AI Health Check Error:', error);
     res.status(503).json({
       success: false,
-      message: 'AI service is experiencing issues',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'AI service is experiencing issues'
     });
   }
 };
@@ -201,11 +247,8 @@ export const checkAIHealth = async (req, res) => {
 export const getHealthTips = async (req, res) => {
   try {
     const { category } = req.query;
-    
     const tips = aiService.getDefaultInsights();
-    
-    // Filter by category if provided
-    const filteredTips = category 
+    const filteredTips = category
       ? tips.filter(tip => tip.category === category)
       : tips;
 
@@ -218,8 +261,7 @@ export const getHealthTips = async (req, res) => {
     console.error('Health Tips Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get health tips.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to get health tips.'
     });
   }
 };
@@ -230,10 +272,10 @@ function calculateAge(dateOfBirth) {
   const birthDate = new Date(dateOfBirth);
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   return age;
-} 
+}

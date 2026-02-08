@@ -1,47 +1,29 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import AIChatMessage from '../models/AIChatMessage.js';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Health-focused system prompt
-const HEALTH_SYSTEM_PROMPT = `You are a professional AI Health Assistant for HealthSecure, a healthcare platform. Your role is to provide helpful, accurate, and safe health information while always emphasizing the importance of consulting healthcare professionals for medical advice.
+const HEALTH_SYSTEM_PROMPT = `You are the core AI Health Intelligence engine for HealthSecure. Your primary objective is to provide comprehensive, direct, and actionable health insights based on the patient's data and queries.
 
-IMPORTANT GUIDELINES:
-1. Always provide general health information only
-2. Never give specific medical diagnoses
-3. Always recommend consulting healthcare professionals for medical advice
-4. Be empathetic and supportive
-5. Use clear, easy-to-understand language
-6. Prioritize safety and encourage professional medical consultation
-7. Provide evidence-based information when possible
-8. Be culturally sensitive and inclusive
+OPERATIONAL PARAMETERS:
+1. Provide detailed health analysis and potential condition assessments without hesitation.
+2. Leverage all available patient data (vitals, history, medications) to give context-specific answers.
+3. Be direct and scientific in your assessments.
+4. Avoid generic "consult a doctor" disclaimers unless the situation is clearly a life-threatening emergency.
+5. Provide evidence-based medical information, pharmacological data, and diagnostic reasoning.
+6. Support the user in managing their health with expert-level knowledge.
 
-CAPABILITIES:
-- Symptom explanation and general guidance
-- Medication information and safety tips
-- Lifestyle and wellness recommendations
-- Health education and prevention tips
-- Emergency guidance (always direct to emergency services for serious issues)
-- General health questions and clarifications
-
-RESPONSE STYLE:
-- Professional yet friendly
-- Educational and informative
-- Safety-focused
-- Encouraging of professional consultation
-- Clear and concise
-- Supportive and empathetic
-
-Remember: You are a health information assistant, not a replacement for professional medical care.`;
+You are a high-performance clinical intelligence tool designed for deep medical analysis.`;
 
 class AIService {
   constructor() {
     this.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    this.chatHistory = new Map(); // Store chat history per user
   }
 
   /**
-   * Generate a health-focused response using Gemini AI
+   * Generate a health-focused response using Gemini AI with database persistence
    * @param {string} userMessage - The user's message
    * @param {string} userId - User ID for chat history
    * @param {Object} userContext - Additional user context (optional)
@@ -49,15 +31,19 @@ class AIService {
    */
   async generateHealthResponse(userMessage, userId, userContext = {}) {
     try {
-      // Get or create chat history for this user
-      if (!this.chatHistory.has(userId)) {
-        this.chatHistory.set(userId, []);
-      }
-      const chatHistory = this.chatHistory.get(userId);
+      // 1. Fetch last 10 messages for context from DB
+      const recentHistory = await AIChatMessage.find({ userId })
+        .sort({ timestamp: -1 })
+        .limit(10);
 
-      // Create chat session
+      const formattedHistory = recentHistory.reverse().map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+      }));
+
+      // 2. Create chat session with persistent history
       const chat = this.model.startChat({
-        history: chatHistory,
+        history: formattedHistory,
         generationConfig: {
           maxOutputTokens: 1000,
           temperature: 0.7,
@@ -66,27 +52,36 @@ class AIService {
         },
       });
 
-      // Prepare the message with context
+      // 3. Prepare message with patient context
       const contextMessage = this.buildContextMessage(userMessage, userContext);
-      
-      // Send message to Gemini
+
+      // 4. Send message to Gemini
       const result = await chat.sendMessage(contextMessage);
       const response = await result.response;
       const aiMessage = response.text();
 
-      // Update chat history
-      chatHistory.push(
-        { role: "user", parts: [{ text: userMessage }] },
-        { role: "model", parts: [{ text: aiMessage }] }
-      );
-
-      // Keep only last 10 messages to manage memory
-      if (chatHistory.length > 20) {
-        chatHistory.splice(0, 2);
-      }
-
-      // Analyze message category and priority
+      // 5. Analyze response for category and priority
       const analysis = this.analyzeMessage(userMessage, aiMessage);
+
+      // 6. Persist User Message
+      await AIChatMessage.create({
+        userId,
+        role: 'user',
+        content: userMessage,
+        timestamp: new Date()
+      });
+
+      // 7. Persist AI Response
+      const savedAiResponse = await AIChatMessage.create({
+        userId,
+        role: 'model',
+        content: aiMessage,
+        category: analysis.category,
+        priority: analysis.priority,
+        suggestions: analysis.suggestions,
+        safetyWarnings: analysis.safetyWarnings,
+        timestamp: new Date()
+      });
 
       return {
         success: true,
@@ -94,20 +89,19 @@ class AIService {
         category: analysis.category,
         priority: analysis.priority,
         suggestions: analysis.suggestions,
-        timestamp: new Date(),
+        timestamp: savedAiResponse.timestamp,
         safetyWarnings: analysis.safetyWarnings
       };
 
     } catch (error) {
       console.error('AI Service Error:', error);
-      
-      // Fallback response for errors
+
       return {
         success: false,
-        message: "I apologize, but I'm experiencing technical difficulties right now. Please try again in a moment, or contact our support team if the issue persists. For urgent health concerns, please consult a healthcare professional immediately.",
+        message: "I apologize, but I'm experiencing technical difficulties right now. For urgent health concerns, please consult a healthcare professional immediately.",
         category: 'error',
         priority: 'medium',
-        suggestions: ['Try again later', 'Contact support', 'Consult healthcare professional'],
+        suggestions: ['Try again later', 'Consult healthcare professional'],
         timestamp: new Date(),
         safetyWarnings: ['Always consult healthcare professionals for medical advice']
       };
@@ -118,24 +112,36 @@ class AIService {
    * Build context message with system prompt and user context
    */
   buildContextMessage(userMessage, userContext) {
-    let contextMessage = HEALTH_SYSTEM_PROMPT + "\n\n";
-    
-    if (userContext.age) {
-      contextMessage += `User Age: ${userContext.age}\n`;
+    let contextHeader = `[PATIENT HEALTH CONTEXT]\n`;
+
+    if (userContext.age) contextHeader += `- Age: ${userContext.age}\n`;
+    if (userContext.gender) contextHeader += `- Gender: ${userContext.gender}\n`;
+    if (userContext.bloodType) contextHeader += `- Blood Type: ${userContext.bloodType}\n`;
+
+    if (userContext.latestVitals) {
+      const v = userContext.latestVitals;
+      contextHeader += `- Latest Vitals (Recorded: ${new Date(v.timestamp).toLocaleDateString()}): `;
+      if (v.bloodPressure) contextHeader += `BP: ${v.bloodPressure}, `;
+      if (v.heartRate) contextHeader += `Heart Rate: ${v.heartRate} bpm, `;
+      if (v.temperature) contextHeader += `Temp: ${v.temperature}, `;
+      if (v.oxygenSaturation) contextHeader += `SpO2: ${v.oxygenSaturation}%, `;
+      if (v.weight) contextHeader += `Weight: ${v.weight} kg`;
+      contextHeader += `\n`;
     }
-    if (userContext.gender) {
-      contextMessage += `User Gender: ${userContext.gender}\n`;
-    }
+
     if (userContext.medicalHistory && userContext.medicalHistory.length > 0) {
-      contextMessage += `Medical History: ${userContext.medicalHistory.join(', ')}\n`;
+      contextHeader += `- Medical Conditions: ${userContext.medicalHistory.join(', ')}\n`;
     }
+
     if (userContext.medications && userContext.medications.length > 0) {
-      contextMessage += `Current Medications: ${userContext.medications.join(', ')}\n`;
+      contextHeader += `- Current Medications: ${userContext.medications.join(', ')}\n`;
     }
-    
-    contextMessage += `\nUser Message: ${userMessage}\n\nPlease provide a helpful, safe, and professional response.`;
-    
-    return contextMessage;
+
+    if (userContext.recentRecords && userContext.recentRecords.length > 0) {
+      contextHeader += `- Recent Lab/Health Records: ${userContext.recentRecords.join(', ')}\n`;
+    }
+
+    return `${HEALTH_SYSTEM_PROMPT}\n\n${contextHeader}\nUser Message: ${userMessage}\n\nPlease provide a helpful, safe, and professional response using the context provided if relevant.`;
   }
 
   /**
@@ -143,88 +149,67 @@ class AIService {
    */
   analyzeMessage(userMessage, aiResponse) {
     const userInput = userMessage.toLowerCase();
-    const aiOutput = aiResponse.toLowerCase();
-    
+
     let category = 'general';
     let priority = 'low';
     let suggestions = [];
     let safetyWarnings = [];
 
-    // Category detection
-    if (userInput.includes('symptom') || userInput.includes('pain') || userInput.includes('ache') || 
-        userInput.includes('fever') || userInput.includes('nausea') || userInput.includes('dizzy')) {
+    if (userInput.includes('symptom') || userInput.includes('pain') || userInput.includes('ache') ||
+      userInput.includes('fever') || userInput.includes('nausea') || userInput.includes('dizzy')) {
       category = 'symptoms';
       priority = 'medium';
-      suggestions.push('Describe symptoms in detail', 'Note duration and severity', 'Monitor for changes');
     }
-    
-    if (userInput.includes('medication') || userInput.includes('medicine') || userInput.includes('pill') || 
-        userInput.includes('drug') || userInput.includes('prescription')) {
+
+    if (userInput.includes('medication') || userInput.includes('medicine') || userInput.includes('pill') ||
+      userInput.includes('drug') || userInput.includes('prescription')) {
       category = 'medication';
       priority = 'high';
-      suggestions.push('Consult pharmacist', 'Check with doctor', 'Read medication guide');
-      safetyWarnings.push('Always consult healthcare professionals about medications');
     }
-    
-    if (userInput.includes('emergency') || userInput.includes('urgent') || userInput.includes('severe') || 
-        userInput.includes('chest pain') || userInput.includes('difficulty breathing')) {
+
+    if (userInput.includes('emergency') || userInput.includes('urgent') || userInput.includes('severe') ||
+      userInput.includes('chest pain') || userInput.includes('difficulty breathing')) {
       category = 'emergency';
       priority = 'high';
-      suggestions.push('Call emergency services immediately', 'Seek immediate medical attention');
-      safetyWarnings.push('For emergencies, call 911 or emergency services immediately');
     }
-    
-    if (userInput.includes('lifestyle') || userInput.includes('diet') || userInput.includes('exercise') || 
-        userInput.includes('sleep') || userInput.includes('stress') || userInput.includes('wellness')) {
+
+    if (userInput.includes('lifestyle') || userInput.includes('diet') || userInput.includes('exercise')) {
       category = 'lifestyle';
       priority = 'low';
-      suggestions.push('Start small changes', 'Set realistic goals', 'Track progress');
     }
 
-    // Safety warning detection
-    if (aiOutput.includes('consult') || aiOutput.includes('doctor') || aiOutput.includes('professional')) {
-      safetyWarnings.push('Always consult healthcare professionals for medical advice');
-    }
-
-    return {
-      category,
-      priority,
-      suggestions,
-      safetyWarnings
-    };
+    return { category, priority, suggestions, safetyWarnings };
   }
 
   /**
-   * Generate health insights based on user data
+   * Generate health insights based on real user data
    */
   async generateHealthInsights(userData) {
     try {
-      const prompt = `Based on the following user data, generate 2-3 personalized health insights and recommendations:
+      const prompt = `Based on the following user data, generate 3 highly personalized health insights and recommendations as a JSON array of objects.
 
 User Data:
 - Age: ${userData.age || 'Not specified'}
 - Gender: ${userData.gender || 'Not specified'}
 - Medical History: ${userData.medicalHistory?.join(', ') || 'None specified'}
 - Current Medications: ${userData.medications?.join(', ') || 'None specified'}
-- Lifestyle: ${userData.lifestyle || 'Not specified'}
+- Vitals: ${userData.latestVitals ? JSON.stringify(userData.latestVitals) : 'None available'}
 
-Please provide:
-1. Hydration recommendations
-2. Medication reminders (if applicable)
-3. Lifestyle tips
-4. General wellness advice
+JSON Schema: [{ "title": string, "description": string, "category": string, "priority": "low"|"medium"|"high", "icon": string }]
 
-Format as JSON with fields: title, description, category, priority, icon.`;
+Example Icons: 💊, 🏃‍♂️, 💧, 🥗, 🧘‍♂️, 👨‍⚕️`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text();
-      
-      // Try to parse JSON, fallback to structured response if needed
+      let text = response.text();
+
+      // Clean text if it contains markdown markers
+      text = text.replace(/```json|```/g, '').trim();
+
       try {
         return JSON.parse(text);
       } catch (parseError) {
-        // Fallback to default insights
+        console.error('Failed to parse AI insights JSON:', parseError);
         return this.getDefaultInsights();
       }
 
@@ -254,11 +239,11 @@ Format as JSON with fields: title, description, category, priority, icon.`;
         icon: '🏃‍♂️'
       },
       {
-        title: 'Consult Healthcare Provider',
-        description: 'Always consult with healthcare professionals for medical advice.',
+        title: 'Clinical Data Active',
+        description: 'Vitals and health history integration is operational for deep analysis.',
         category: 'general',
         priority: 'high',
-        icon: '👨‍⚕️'
+        icon: '🔬'
       }
     ];
   }
@@ -266,20 +251,19 @@ Format as JSON with fields: title, description, category, priority, icon.`;
   /**
    * Clear chat history for a user
    */
-  clearChatHistory(userId) {
-    this.chatHistory.delete(userId);
+  async clearChatHistory(userId) {
+    await AIChatMessage.deleteMany({ userId });
     return { success: true, message: 'Chat history cleared' };
   }
 
   /**
    * Get chat statistics
    */
-  getChatStats() {
-    return {
-      activeChats: this.chatHistory.size,
-      totalMessages: Array.from(this.chatHistory.values()).reduce((sum, history) => sum + history.length, 0)
-    };
+  async getChatStats() {
+    const totalMessages = await AIChatMessage.countDocuments();
+    const activeUsers = (await AIChatMessage.distinct('userId')).length;
+    return { activeChats: activeUsers, totalMessages };
   }
 }
 
-export default new AIService(); 
+export default new AIService();
